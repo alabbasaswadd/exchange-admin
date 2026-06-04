@@ -1,6 +1,16 @@
 import 'package:exchange_admin/pages/auth/signin/api/signin_api.dart';
 import 'package:exchange_admin/pages/auth/signin/api/signin_api_service.dart';
 import 'package:exchange_admin/pages/auth/signin/cubit/signin_cubit.dart';
+import 'package:exchange_admin/pages/currencies/api/currencies_api.dart';
+import 'package:exchange_admin/pages/currencies/api/currencies_api_service.dart';
+import 'package:exchange_admin/pages/currencies/cubit/currencies_cubit.dart';
+import 'package:exchange_admin/pages/exchange_rates/api/exchange_rates_api.dart';
+import 'package:exchange_admin/pages/exchange_rates/api/exchange_rates_api_service.dart';
+import 'package:exchange_admin/pages/exchange_rates/cubit/exchange_rates_cubit.dart';
+import 'package:exchange_admin/pages/exchange_requests/api/exchange_requests_api.dart';
+import 'package:exchange_admin/pages/exchange_requests/api/exchange_requests_api_service.dart';
+import 'package:exchange_admin/pages/exchange_requests/cubit/exchange_requests_cubit.dart';
+import 'package:exchange_admin/pages/notifications/cubit/notifications_cubit.dart';
 import 'package:exchange_admin/pages/startup/cubit/startup_cubit.dart';
 import 'package:get_it/get_it.dart';
 
@@ -13,10 +23,21 @@ Future<void> initDI() async {
 
   // API Services
   getIt.registerLazySingleton(() => SigninApiService(getIt()));
+  getIt.registerLazySingleton(() => ExchangeRatesApiService(getIt()));
+  getIt.registerLazySingleton(() => CurrenciesApiService(getIt()));
+  getIt.registerLazySingleton(() => ExchangeRequestsApiService(getIt()));
+
   // API Wrappers
   getIt.registerLazySingleton(() => SigninApi(getIt()));
+  getIt.registerLazySingleton(() => ExchangeRatesApi(getIt()));
+  getIt.registerLazySingleton(() => CurrenciesApi(getIt()));
+  getIt.registerLazySingleton(() => ExchangeRequestsApi(getIt()));
 
   // Cubits
   getIt.registerLazySingleton(() => StartupCubit());
   getIt.registerFactory(() => SigninCubit(getIt()));
+  getIt.registerFactory(() => ExchangeRatesCubit(getIt()));
+  getIt.registerFactory(() => CurrenciesCubit(getIt()));
+  getIt.registerFactory(() => ExchangeRequestsCubit(getIt()));
+  getIt.registerFactory(() => NotificationsCubit());
 }

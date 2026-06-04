@@ -465,4 +465,129 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get done => 'Done';
+
+  // Admin features
+  @override
+  String get admin_panel => 'Admin Panel';
+
+  @override
+  String get dashboard => 'Dashboard';
+
+  // Currencies
+  @override
+  String get currencies => 'Currencies';
+
+  @override
+  String get currency_name => 'Currency Name';
+
+  @override
+  String get currency_code => 'Currency Code';
+
+  @override
+  String get currency_symbol => 'Currency Symbol';
+
+  @override
+  String get add_currency => 'Add Currency';
+
+  @override
+  String get edit_currency => 'Edit Currency';
+
+  @override
+  String get delete_currency => 'Delete Currency';
+
+  @override
+  String get no_currencies => 'No currencies found';
+
+  @override
+  String get currency_added => 'Currency added successfully';
+
+  @override
+  String get currency_updated => 'Currency updated successfully';
+
+  @override
+  String get currency_deleted => 'Currency deleted successfully';
+
+  @override
+  String get currency_name_required => 'Please enter the currency name';
+
+  @override
+  String get currency_code_required => 'Please enter the currency code';
+
+  @override
+  String get currency_symbol_required => 'Please enter the currency symbol';
+
+  @override
+  String get is_active => 'Active';
+
+  // Exchange Requests
+  @override
+  String get exchange_requests => 'Exchange Requests';
+
+  @override
+  String get requester => 'Requester';
+
+  @override
+  String get amount => 'Amount';
+
+  @override
+  String get converted_amount => 'Converted Amount';
+
+  @override
+  String get accept => 'Accept';
+
+  @override
+  String get reject => 'Reject';
+
+  @override
+  String get suspend => 'Suspend';
+
+  @override
+  String get status_accepted => 'Accepted';
+
+  @override
+  String get status_suspended => 'Suspended';
+
+  @override
+  String get no_requests => 'No requests found';
+
+  @override
+  String get request_accepted => 'Request accepted successfully';
+
+  @override
+  String get request_rejected => 'Request rejected successfully';
+
+  @override
+  String get request_suspended => 'Request suspended successfully';
+
+  @override
+  String get confirm_action => 'Confirm Action';
+
+  // Notifications
+  @override
+  String get no_notifications => 'No notifications';
+
+  @override
+  String get mark_all_read => 'Mark all as read';
+
+  // Common
+  @override
+  String get cancel => 'Cancel';
+
+  @override
+  String get confirm_delete => 'Confirm Delete';
+
+  @override
+  String get delete_confirm_message => 'Are you sure you want to delete';
+
+  @override
+  String get search => 'Search...';
+
+  @override
+  String get edit => 'Edit';
+
+  @override
+  String get delete => 'Delete';
+
+  @override
+  String get rate => 'Rate';
 }

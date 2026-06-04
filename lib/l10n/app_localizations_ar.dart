@@ -465,4 +465,129 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get done => 'تم';
+
+  // Admin features
+  @override
+  String get admin_panel => 'لوحة الإدارة';
+
+  @override
+  String get dashboard => 'الرئيسية';
+
+  // Currencies
+  @override
+  String get currencies => 'العملات';
+
+  @override
+  String get currency_name => 'اسم العملة';
+
+  @override
+  String get currency_code => 'رمز العملة';
+
+  @override
+  String get currency_symbol => 'علامة العملة';
+
+  @override
+  String get add_currency => 'إضافة عملة';
+
+  @override
+  String get edit_currency => 'تعديل عملة';
+
+  @override
+  String get delete_currency => 'حذف عملة';
+
+  @override
+  String get no_currencies => 'لا توجد عملات';
+
+  @override
+  String get currency_added => 'تم إضافة العملة بنجاح';
+
+  @override
+  String get currency_updated => 'تم تحديث العملة بنجاح';
+
+  @override
+  String get currency_deleted => 'تم حذف العملة بنجاح';
+
+  @override
+  String get currency_name_required => 'الرجاء إدخال اسم العملة';
+
+  @override
+  String get currency_code_required => 'الرجاء إدخال رمز العملة';
+
+  @override
+  String get currency_symbol_required => 'الرجاء إدخال علامة العملة';
+
+  @override
+  String get is_active => 'نشط';
+
+  // Exchange Requests
+  @override
+  String get exchange_requests => 'طلبات الصرف';
+
+  @override
+  String get requester => 'مقدم الطلب';
+
+  @override
+  String get amount => 'المبلغ';
+
+  @override
+  String get converted_amount => 'المبلغ المحول';
+
+  @override
+  String get accept => 'قبول';
+
+  @override
+  String get reject => 'رفض';
+
+  @override
+  String get suspend => 'تعليق';
+
+  @override
+  String get status_accepted => 'مقبول';
+
+  @override
+  String get status_suspended => 'معلق';
+
+  @override
+  String get no_requests => 'لا توجد طلبات';
+
+  @override
+  String get request_accepted => 'تم قبول الطلب بنجاح';
+
+  @override
+  String get request_rejected => 'تم رفض الطلب بنجاح';
+
+  @override
+  String get request_suspended => 'تم تعليق الطلب بنجاح';
+
+  @override
+  String get confirm_action => 'تأكيد الإجراء';
+
+  // Notifications
+  @override
+  String get no_notifications => 'لا توجد إشعارات';
+
+  @override
+  String get mark_all_read => 'تعليم الكل كمقروء';
+
+  // Common
+  @override
+  String get cancel => 'إلغاء';
+
+  @override
+  String get confirm_delete => 'تأكيد الحذف';
+
+  @override
+  String get delete_confirm_message => 'هل أنت متأكد من حذف';
+
+  @override
+  String get search => 'بحث...';
+
+  @override
+  String get edit => 'تعديل';
+
+  @override
+  String get delete => 'حذف';
+
+  @override
+  String get rate => 'السعر';
 }

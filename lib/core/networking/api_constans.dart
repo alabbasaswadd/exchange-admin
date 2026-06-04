@@ -2,21 +2,26 @@ class ApiConstants {
   static const String apiBaseUrl =
       "https://shamcash.runasp.net/currency-exchange-api/api/";
 
+  // Auth
   static const String signin = "User/Auth/login";
 
   // Exchange Rates
   static const String exchangeRates = "v1/ExchangeRate";
-  static const String exchangeRateActive = "v1/ExchangeRate/Active";
-  static const String exchangeRateById = "v1/ExchangeRate/{id}";
+  static const String exchangeRateUpdate = "v1/ExchangeRate/Update";
 
   // Currencies
   static const String currencies = "v1/Currency";
-  static const String currencyById = "v1/Currency/{id}";
+
+  // Notifications
+  // static const String notifications = "v1/Notification/GetAll";
+  // static const String notificationMarkAsRead = "v1/Notification/MarkAsRead";
+  // static const String notificationMarkAllAsRead = "v1/Notification/MarkAllAsRead";
 
   // Exchange Requests
   static const String exchangeRequests = "v1/ExchangeRequest";
-  static const String exchangeRequestById = "v1/ExchangeRequest/{id}";
-  static const String exchangeRequestStatus = "v1/ExchangeRequest/{id}/Status";
+  static const String exchangeRequestAccept = "v1/ExchangeRequest/Accept";
+  static const String exchangeRequestReject = "v1/ExchangeRequest/Reject";
+  static const String exchangeRequestSuspend = "v1/ExchangeRequest/Suspend";
 }
 
 class ApiErrors {

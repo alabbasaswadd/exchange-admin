@@ -562,6 +562,56 @@ abstract class AppLocalizations {
   String get payment_successful;
   String get balance_recharged;
   String get done;
+
+  // Admin features
+  String get admin_panel;
+  String get dashboard;
+
+  // Currencies
+  String get currencies;
+  String get currency_name;
+  String get currency_code;
+  String get currency_symbol;
+  String get add_currency;
+  String get edit_currency;
+  String get delete_currency;
+  String get no_currencies;
+  String get currency_added;
+  String get currency_updated;
+  String get currency_deleted;
+  String get currency_name_required;
+  String get currency_code_required;
+  String get currency_symbol_required;
+  String get is_active;
+
+  // Exchange Requests
+  String get exchange_requests;
+  String get requester;
+  String get amount;
+  String get converted_amount;
+  String get accept;
+  String get reject;
+  String get suspend;
+  String get status_accepted;
+  String get status_suspended;
+  String get no_requests;
+  String get request_accepted;
+  String get request_rejected;
+  String get request_suspended;
+  String get confirm_action;
+
+  // Notifications
+  String get no_notifications;
+  String get mark_all_read;
+
+  // Common
+  String get cancel;
+  String get confirm_delete;
+  String get delete_confirm_message;
+  String get search;
+  String get edit;
+  String get delete;
+  String get rate;
 }
 
 class _AppLocalizationsDelegate

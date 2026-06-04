@@ -37,6 +37,37 @@ Color _highlightColor(BuildContext context) {
   return isDark ? const Color(0xFF3A3A3A) : const Color(0xFFF5F5F5);
 }
 
+// ─── Generic shimmer widget ───────────────────────────────────────────────────
+
+class ShimmerWidget extends StatelessWidget {
+  final double width;
+  final double height;
+  final double borderRadius;
+
+  const ShimmerWidget.rectangular({
+    super.key,
+    this.width = double.infinity,
+    required this.height,
+    this.borderRadius = 12,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Shimmer.fromColors(
+      baseColor: _baseColor(context),
+      highlightColor: _highlightColor(context),
+      child: Container(
+        width: width,
+        height: height,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(borderRadius),
+        ),
+      ),
+    );
+  }
+}
+
 // ─── Home Tab shimmer ─────────────────────────────────────────────────────────
 
 class HomeShimmer extends StatelessWidget {

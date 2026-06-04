@@ -17,11 +17,6 @@ class ApiConstants {
   static const String exchangeRequests = "v1/ExchangeRequest";
   static const String exchangeRequestById = "v1/ExchangeRequest/{id}";
   static const String exchangeRequestStatus = "v1/ExchangeRequest/{id}/Status";
-
-  // Notifications
-  static const String notifications = "v1/Notification";
-  static const String notificationRead = "v1/Notification/{id}/Read";
-  static const String notificationReadAll = "v1/Notification/ReadAll";
 }
 
 class ApiErrors {

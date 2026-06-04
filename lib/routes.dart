@@ -2,11 +2,6 @@ import 'package:exchange_admin/core/constants/cached/cached_helper.dart';
 import 'package:exchange_admin/core/di/dependency_injection.dart';
 import 'package:exchange_admin/pages/auth/signin/cubit/signin_cubit.dart';
 import 'package:exchange_admin/pages/auth/signin/screen/signin_screen.dart';
-import 'package:exchange_admin/pages/currencies/cubit/currencies_cubit.dart';
-import 'package:exchange_admin/pages/exchange_rates/cubit/exchange_rates_cubit.dart';
-import 'package:exchange_admin/pages/exchange_requests/cubit/exchange_requests_cubit.dart';
-import 'package:exchange_admin/pages/home/screen/home_shell.dart';
-import 'package:exchange_admin/pages/notifications/cubit/notifications_cubit.dart';
 import 'package:exchange_admin/pages/startup/cubit/startup_cubit.dart';
 import 'package:exchange_admin/pages/startup/screen/startup_screen.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -35,21 +30,6 @@ final GoRouter router = GoRouter(
       builder: (context, state) => BlocProvider(
         create: (_) => getIt<SigninCubit>(),
         child: const SigninScreen(),
-      ),
-    ),
-    GoRoute(
-      path: '/home',
-      builder: (context, state) => MultiBlocProvider(
-        providers: [
-          BlocProvider(create: (_) => getIt<ExchangeRatesCubit>()),
-          BlocProvider(create: (_) => getIt<CurrenciesCubit>()),
-          BlocProvider(create: (_) => getIt<ExchangeRequestsCubit>()),
-          BlocProvider(
-            create: (_) =>
-                getIt<NotificationsCubit>()..fetchNotifications(),
-          ),
-        ],
-        child: const HomeShell(),
       ),
     ),
   ],

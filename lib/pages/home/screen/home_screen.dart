@@ -1,3 +1,5 @@
+import 'dart:math' show min;
+
 import 'package:exchange_admin/core/components/app_button.dart';
 import 'package:exchange_admin/core/components/app_snackbar.dart';
 import 'package:exchange_admin/core/components/app_text.dart';
@@ -17,31 +19,29 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
+// ─────────────────────────────────────────────────────────────────────────────
+// HOME SCREEN
+// ─────────────────────────────────────────────────────────────────────────────
+
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
-      backgroundColor: Theme.of(context).brightness == Brightness.dark
-          ? AppColors.kBackgroundDark
-          : AppColors.kBackgroundLight,
+      backgroundColor:
+          isDark ? AppColors.kBackgroundDark : const Color(0xFFF0F4F8),
       body: CustomScrollView(
         slivers: [
-          _buildSliverAppBar(context),
+          _buildAppBar(context, isDark),
           SliverPadding(
-            padding: const EdgeInsets.only(bottom: 32),
+            padding: const EdgeInsets.only(bottom: 48),
             sliver: SliverList(
               delegate: SliverChildListDelegate([
-                const _NotificationsSection(),
-                const SizedBox(height: 8),
-                const _StatsSection(),
-                const SizedBox(height: 8),
-                const _ExchangeRatesSection(),
-                const SizedBox(height: 8),
-                const _CurrenciesSection(),
-                const SizedBox(height: 8),
-                const _ExchangeRequestsSection(),
+                const _MainCard(),
+                const SizedBox(height: 16),
+                const _RecentRequestsCard(),
               ]),
             ),
           ),
@@ -50,14 +50,14 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  SliverAppBar _buildSliverAppBar(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+  SliverAppBar _buildAppBar(BuildContext context, bool isDark) {
     return SliverAppBar(
-      expandedHeight: 120,
+      expandedHeight: 96,
       pinned: true,
       stretch: true,
-      backgroundColor:
-          isDark ? AppColors.kPrimaryColorDarkMode : AppColors.kPrimaryColor,
+      backgroundColor: isDark
+          ? AppColors.kPrimaryColorDarkMode
+          : AppColors.kPrimaryColor,
       flexibleSpace: FlexibleSpaceBar(
         stretchModes: const [StretchMode.zoomBackground],
         background: Container(
@@ -68,129 +68,89 @@ class HomeScreen extends StatelessWidget {
                       AppColors.kPrimaryColorDarkMode,
                       AppColors.kSecondColorDarkMode,
                     ]
-                  : [AppColors.kPrimaryColor, AppColors.kSecondColor],
+                  : [AppColors.kPrimaryColor, const Color(0xFF047857)],
               begin: Alignment.topRight,
               end: Alignment.bottomLeft,
             ),
           ),
-          child: SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+        ),
+        title: Row(
+          children: [
+            const SizedBox(width: 4),
+            Container(
+              width: 30,
+              height: 30,
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.2),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.admin_panel_settings_rounded,
+                  color: Colors.white, size: 16),
+            ),
+            const SizedBox(width: 8),
+            const Expanded(
+              child: AppText('لوحة الإدارة',
+                  color: Colors.white, fontSize: 16, fontWeight: FontWeight.w700),
+            ),
+          ],
+        ),
+        titlePadding:
+            const EdgeInsets.only(bottom: 12, left: 16, right: 100),
+        centerTitle: false,
+      ),
+      actions: [
+        BlocBuilder<NotificationsCubit, List<NotificationModel>>(
+          builder: (context, _) {
+            final unread = context.read<NotificationsCubit>().unreadCount;
+            return Stack(
+              alignment: Alignment.center,
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.notifications_outlined,
+                      color: Colors.white, size: 24),
+                  onPressed: () => context.push('/notifications'),
+                ),
+                if (unread > 0)
+                  Positioned(
+                    top: 8,
+                    right: 6,
+                    child: Container(
+                      width: 18,
+                      height: 18,
+                      decoration: BoxDecoration(
+                        color: AppColors.kRedColor,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.white, width: 1.5),
+                      ),
+                      alignment: Alignment.center,
+                      child: AppText(unread > 9 ? '9+' : '$unread',
+                          fontSize: 9,
+                          color: Colors.white,
+                          fontWeight: FontWeight.w700),
+                    ),
+                  ),
+              ],
+            );
+          },
+        ),
+        PopupMenuButton<String>(
+          icon: const Icon(Icons.more_vert_rounded, color: Colors.white),
+          onSelected: (v) {
+            if (v == 'logout') _confirmLogout(context);
+          },
+          itemBuilder: (_) => [
+            PopupMenuItem(
+              value: 'logout',
               child: Row(
-                children: [
-                  Container(
-                    width: 44,
-                    height: 44,
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.admin_panel_settings_rounded,
-                      color: Colors.white,
-                      size: 24,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      AppText(
-                        'مرحباً، المدير',
-                        fontSize: 18,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.white,
-                      ),
-                      AppText(
-                        'لوحة التحكم الرئيسية',
-                        fontSize: 12,
-                        color: Colors.white.withOpacity(0.8),
-                        fontWeight: FontWeight.w400,
-                      ),
-                    ],
-                  ),
-                  const Spacer(),
-                  BlocBuilder<NotificationsCubit, List<NotificationModel>>(
-                    builder: (context, notifications) {
-                      final unread = context
-                          .read<NotificationsCubit>()
-                          .unreadCount;
-                      return Stack(
-                        children: [
-                          IconButton(
-                            icon: const Icon(
-                              Icons.notifications_outlined,
-                              color: Colors.white,
-                            ),
-                            onPressed: () {},
-                          ),
-                          if (unread > 0)
-                            Positioned(
-                              top: 6,
-                              right: 6,
-                              child: Container(
-                                width: 18,
-                                height: 18,
-                                decoration: BoxDecoration(
-                                  color: AppColors.kRedColor,
-                                  shape: BoxShape.circle,
-                                  border: Border.all(
-                                    color: Colors.white,
-                                    width: 1.5,
-                                  ),
-                                ),
-                                alignment: Alignment.center,
-                                child: AppText(
-                                  unread > 9 ? '9+' : '$unread',
-                                  fontSize: 9,
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                            ),
-                        ],
-                      );
-                    },
-                  ),
-                  _LogoutButton(),
+                children: const [
+                  Icon(Icons.logout_rounded,
+                      color: AppColors.kRedColor, size: 20),
+                  SizedBox(width: 8),
+                  AppText('تسجيل الخروج', color: AppColors.kRedColor),
                 ],
               ),
             ),
-          ),
-        ),
-        title: AppText(
-          'لوحة التحكم',
-          color: Colors.white,
-          fontSize: 16,
-        ),
-        centerTitle: true,
-        titlePadding:
-            const EdgeInsets.only(bottom: 12, left: 56, right: 56),
-      ),
-    );
-  }
-}
-
-class _LogoutButton extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return PopupMenuButton<String>(
-      icon: const Icon(Icons.more_vert_rounded, color: Colors.white),
-      onSelected: (value) {
-        if (value == 'logout') _confirmLogout(context);
-      },
-      itemBuilder: (_) => [
-        PopupMenuItem(
-          value: 'logout',
-          child: Row(
-            children: [
-              const Icon(Icons.logout_rounded,
-                  color: AppColors.kRedColor, size: 20),
-              const SizedBox(width: 8),
-              AppText('تسجيل الخروج', color: AppColors.kRedColor),
-            ],
-          ),
+          ],
         ),
       ],
     );
@@ -199,23 +159,24 @@ class _LogoutButton extends StatelessWidget {
   void _confirmLogout(BuildContext context) {
     showDialog(
       context: context,
-      builder: (dlgCtx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: AppText('تسجيل الخروج'),
-        content: AppText('هل أنت متأكد أنك تريد تسجيل الخروج؟',
+      builder: (dlg) => AlertDialog(
+        shape:
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const AppText('تسجيل الخروج'),
+        content: const AppText('هل أنت متأكد أنك تريد تسجيل الخروج؟',
             maxLines: 2, fontWeight: FontWeight.w400),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(dlgCtx),
-            child: AppText('إلغاء', color: AppColors.kGreyColor),
+            onPressed: () => Navigator.pop(dlg),
+            child: const AppText('إلغاء', color: AppColors.kGreyColor),
           ),
           TextButton(
             onPressed: () async {
-              Navigator.pop(dlgCtx);
+              Navigator.pop(dlg);
               await CacheHelper.remove('token');
               if (context.mounted) context.go('/signin');
             },
-            child: AppText('خروج', color: AppColors.kRedColor),
+            child: const AppText('خروج', color: AppColors.kRedColor),
           ),
         ],
       ),
@@ -224,91 +185,285 @@ class _LogoutButton extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// SECTION HEADER
+// MAIN CARD  (stateful — owns fromCode / toCode)
 // ─────────────────────────────────────────────────────────────────────────────
 
-class _SectionHeader extends StatelessWidget {
-  final String title;
-  final IconData icon;
-  final Color iconColor;
-  final Widget? trailing;
-
-  const _SectionHeader({
-    required this.title,
-    required this.icon,
-    required this.iconColor,
-    this.trailing,
-  });
+class _MainCard extends StatefulWidget {
+  const _MainCard();
 
   @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Row(
-        children: [
-          Container(
-            width: 36,
-            height: 36,
-            decoration: BoxDecoration(
-              color: iconColor.withOpacity(0.12),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Icon(icon, color: iconColor, size: 18),
-          ),
-          const SizedBox(width: 10),
-          AppText(title, fontSize: 16, fontWeight: FontWeight.w700),
-          const Spacer(),
-          if (trailing != null) trailing!,
-        ],
-      ),
-    );
-  }
+  State<_MainCard> createState() => _MainCardState();
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// NOTIFICATIONS SECTION
-// ─────────────────────────────────────────────────────────────────────────────
-
-class _NotificationsSection extends StatelessWidget {
-  const _NotificationsSection();
+class _MainCardState extends State<_MainCard> {
+  String _fromCode = 'USD';
+  String _toCode = 'SYP';
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<NotificationsCubit, List<NotificationModel>>(
-      builder: (context, notifications) {
-        if (notifications.isEmpty) return const SizedBox.shrink();
-        final cubit = context.read<NotificationsCubit>();
-        return Column(
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: isDark
+              ? [
+                  AppColors.kPrimaryColorDarkMode,
+                  AppColors.kSecondColorDarkMode,
+                ]
+              : [AppColors.kPrimaryColor, const Color(0xFF047857)],
+          begin: Alignment.topRight,
+          end: Alignment.bottomLeft,
+        ),
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.kPrimaryColor.withValues(alpha: 0.38),
+            blurRadius: 28,
+            offset: const Offset(0, 12),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(20, 22, 20, 20),
+        child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const SizedBox(height: 20),
-            _SectionHeader(
-              title: 'الإشعارات',
-              icon: Icons.notifications_rounded,
-              iconColor: const Color(0xFF3B82F6),
-              trailing: cubit.unreadCount > 0
-                  ? TextButton(
-                      onPressed: cubit.markAllAsRead,
-                      child: AppText(
-                        'تحديد الكل كمقروء',
-                        fontSize: 12,
-                        color: AppColors.kPrimaryColor,
-                      ),
-                    )
-                  : null,
+            _buildGreeting(),
+            const SizedBox(height: 22),
+            _buildStats(context),
+            _buildSeparator(),
+            _buildRateHeader(),
+            const SizedBox(height: 14),
+            _buildDropdownRow(context),
+            const SizedBox(height: 14),
+            _buildRateDisplay(context),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ── Greeting ──────────────────────────────────────────────────────────────
+
+  Widget _buildGreeting() {
+    final now = DateTime.now();
+    const months = [
+      '',
+      'يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو',
+      'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر',
+    ];
+    final dateStr = '${now.day} ${months[now.month]} ${now.year}';
+
+    return Row(
+      children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const AppText('مرحباً، المدير',
+                  fontSize: 22,
+                  color: Colors.white,
+                  fontWeight: FontWeight.w700),
+              const SizedBox(height: 4),
+              Row(
+                children: [
+                  Icon(Icons.calendar_today_rounded,
+                      size: 11,
+                      color: Colors.white.withValues(alpha: 0.75)),
+                  const SizedBox(width: 5),
+                  AppText(dateStr,
+                      fontSize: 11,
+                      color: Colors.white.withValues(alpha: 0.75),
+                      fontWeight: FontWeight.w400),
+                ],
+              ),
+            ],
+          ),
+        ),
+        Container(
+          width: 52,
+          height: 52,
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.14),
+            shape: BoxShape.circle,
+          ),
+          child: const Icon(Icons.account_balance_rounded,
+              color: Colors.white, size: 26),
+        ),
+      ],
+    );
+  }
+
+  // ── Stats row ─────────────────────────────────────────────────────────────
+
+  Widget _buildStats(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: BlocBuilder<ExchangeRatesCubit,
+              SigninState<List<ExchangeRateModel>>>(
+            builder: (_, s) => _HeroStat(
+              icon: Icons.currency_exchange_rounded,
+              label: 'أسعار الصرف',
+              value: s.maybeWhen(success: (l) => '${l.length}', orElse: () => '—'),
             ),
-            const SizedBox(height: 12),
-            SizedBox(
-              height: 100,
-              child: ListView.separated(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                itemCount: notifications.length,
-                separatorBuilder: (_, __) => const SizedBox(width: 10),
-                itemBuilder: (context, i) => _NotificationCard(
-                  notification: notifications[i],
-                  onTap: () => cubit.markAsRead(notifications[i].id!),
+          ),
+        ),
+        _statDivider(),
+        Expanded(
+          child: BlocBuilder<CurrenciesCubit,
+              SigninState<List<CurrencyModel>>>(
+            builder: (_, s) => _HeroStat(
+              icon: Icons.account_balance_wallet_rounded,
+              label: 'العملات',
+              value: s.maybeWhen(success: (l) => '${l.length}', orElse: () => '—'),
+            ),
+          ),
+        ),
+        _statDivider(),
+        Expanded(
+          child: BlocBuilder<ExchangeRequestsCubit,
+              SigninState<List<ExchangeRequestModel>>>(
+            builder: (_, s) {
+              final n = s.maybeWhen(
+                success: (l) => l.where((r) => r.status == 'pending').length,
+                orElse: () => 0,
+              );
+              return _HeroStat(
+                icon: Icons.pending_actions_rounded,
+                label: 'معلقة',
+                value: '$n',
+                valueColor:
+                    n > 0 ? AppColors.kWarningColor : Colors.white,
+              );
+            },
+          ),
+        ),
+        _statDivider(),
+        Expanded(
+          child: BlocBuilder<ExchangeRequestsCubit,
+              SigninState<List<ExchangeRequestModel>>>(
+            builder: (_, s) => _HeroStat(
+              icon: Icons.check_circle_outline_rounded,
+              label: 'منجزة',
+              value: s.maybeWhen(
+                success: (l) =>
+                    '${l.where((r) => r.status == 'accepted').length}',
+                orElse: () => '—',
+              ),
+              valueColor: const Color(0xFF6EE7B7),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _statDivider() => Container(
+        width: 1,
+        height: 44,
+        color: Colors.white.withValues(alpha: 0.18),
+      );
+
+  // ── Separator line ────────────────────────────────────────────────────────
+
+  Widget _buildSeparator() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 18),
+      child: Container(
+        height: 1,
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              Colors.transparent,
+              Colors.white.withValues(alpha: 0.28),
+              Colors.transparent,
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ── Rate section header ───────────────────────────────────────────────────
+
+  Widget _buildRateHeader() {
+    return Row(
+      children: [
+        Container(
+          width: 28,
+          height: 28,
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.14),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: const Icon(Icons.swap_horiz_rounded,
+              color: Colors.white, size: 16),
+        ),
+        const SizedBox(width: 8),
+        const AppText('سعر الصرف الحالي',
+            fontSize: 13,
+            color: Colors.white,
+            fontWeight: FontWeight.w600),
+        const Spacer(),
+        AppText(
+          '$_fromCode / $_toCode',
+          fontSize: 11,
+          color: Colors.white.withValues(alpha: 0.65),
+          fontWeight: FontWeight.w400,
+        ),
+      ],
+    );
+  }
+
+  // ── Dropdown row ──────────────────────────────────────────────────────────
+
+  Widget _buildDropdownRow(BuildContext context) {
+    return BlocBuilder<CurrenciesCubit, SigninState<List<CurrencyModel>>>(
+      builder: (context, state) {
+        final currencies = state.maybeWhen(
+          success: (c) => c,
+          orElse: () => <CurrencyModel>[],
+        );
+        return Row(
+          children: [
+            Expanded(
+              child: _CurrencyDropdownButton(
+                currencies: currencies,
+                selectedCode: _fromCode,
+                label: 'من',
+                onTap: () => _showPicker(context, currencies, true),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 10),
+              child: GestureDetector(
+                onTap: () => setState(() {
+                  final tmp = _fromCode;
+                  _fromCode = _toCode;
+                  _toCode = tmp;
+                }),
+                child: Container(
+                  width: 38,
+                  height: 38,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.14),
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.22)),
+                  ),
+                  child: const Icon(Icons.swap_horiz_rounded,
+                      color: Colors.white, size: 18),
                 ),
+              ),
+            ),
+            Expanded(
+              child: _CurrencyDropdownButton(
+                currencies: currencies,
+                selectedCode: _toCode,
+                label: 'إلى',
+                onTap: () => _showPicker(context, currencies, false),
               ),
             ),
           ],
@@ -316,472 +471,136 @@ class _NotificationsSection extends StatelessWidget {
       },
     );
   }
-}
 
-class _NotificationCard extends StatelessWidget {
-  final NotificationModel notification;
-  final VoidCallback onTap;
+  // ── Rate display ──────────────────────────────────────────────────────────
 
-  const _NotificationCard({required this.notification, required this.onTap});
+  Widget _buildRateDisplay(BuildContext context) {
+    return BlocBuilder<ExchangeRatesCubit,
+        SigninState<List<ExchangeRateModel>>>(
+      builder: (context, state) {
+        if (state.maybeWhen(loading: () => true, orElse: () => false)) {
+          return _rateLoadingPlaceholder();
+        }
 
-  Color get _color {
-    switch (notification.type?.toLowerCase()) {
-      case 'success':
-        return AppColors.kSuccessColor;
-      case 'warning':
-        return AppColors.kWarningColor;
-      case 'error':
-        return AppColors.kRedColor;
-      default:
-        return const Color(0xFF3B82F6);
-    }
-  }
+        final rates =
+            state.maybeWhen(success: (r) => r, orElse: () => <ExchangeRateModel>[]);
 
-  IconData get _icon {
-    switch (notification.type?.toLowerCase()) {
-      case 'success':
-        return Icons.check_circle_outline_rounded;
-      case 'warning':
-        return Icons.warning_amber_outlined;
-      case 'error':
-        return Icons.error_outline_rounded;
-      default:
-        return Icons.info_outline_rounded;
-    }
-  }
+        ExchangeRateModel? rate;
+        for (final r in rates) {
+          if (r.fromCurrencyCode == _fromCode &&
+              r.toCurrencyCode == _toCode) {
+            rate = r;
+            break;
+          }
+        }
 
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final isRead = notification.isRead ?? false;
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        width: 220,
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: isRead
-              ? (isDark ? AppColors.kCardDark : Colors.white)
-              : _color.withOpacity(0.07),
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(
-            color: isRead ? Colors.transparent : _color.withOpacity(0.3),
-            width: 1.2,
-          ),
-          boxShadow: [
-            if (!isDark)
-              BoxShadow(
-                color: Colors.black.withOpacity(0.06),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
-              ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        if (rate == null) {
+          return _rateNotFound();
+        }
+
+        final spread = (rate.sellRate ?? 0) - (rate.buyRate ?? 0);
+        final spreadPct = rate.buyRate != null && rate.buyRate! > 0
+            ? (spread / rate.buyRate!) * 100
+            : 0.0;
+
+        return Column(
           children: [
             Row(
               children: [
-                Icon(_icon, color: _color, size: 16),
-                const SizedBox(width: 6),
                 Expanded(
-                  child: AppText(
-                    notification.title ?? '',
-                    fontSize: 12,
-                    fontWeight:
-                        isRead ? FontWeight.w400 : FontWeight.w700,
-                    maxLines: 1,
+                  child: _RateBox(
+                    label: 'سعر الشراء',
+                    sublabel: 'بالـ ${_toCode}',
+                    value: rate.buyRate,
+                    color: const Color(0xFF34D399),
+                    icon: Icons.trending_up_rounded,
                   ),
                 ),
-                if (!isRead)
-                  Container(
-                    width: 7,
-                    height: 7,
-                    decoration: BoxDecoration(
-                      color: _color,
-                      shape: BoxShape.circle,
-                    ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: _RateBox(
+                    label: 'سعر البيع',
+                    sublabel: 'بالـ ${_toCode}',
+                    value: rate.sellRate,
+                    color: const Color(0xFFFCA5A5),
+                    icon: Icons.trending_down_rounded,
                   ),
+                ),
+                const SizedBox(width: 10),
+                _EditRateIconButton(
+                  rate: rate,
+                  ratesCubit: context.read<ExchangeRatesCubit>(),
+                ),
               ],
             ),
-            const SizedBox(height: 6),
-            Expanded(
-              child: AppText(
-                notification.body ?? '',
-                fontSize: 11,
-                color: AppColors.kGreyColor,
-                fontWeight: FontWeight.w400,
-                maxLines: 2,
-              ),
-            ),
-            AppText(
-              notification.createdAt ?? '',
-              fontSize: 10,
-              color: AppColors.kGreyColor.withOpacity(0.7),
-              fontWeight: FontWeight.w400,
+            const SizedBox(height: 10),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.compare_arrows_rounded,
+                    size: 12,
+                    color: Colors.white.withValues(alpha: 0.5)),
+                const SizedBox(width: 4),
+                AppText(
+                  'الهامش: ${_fmtRate(spread)}  (${spreadPct.toStringAsFixed(1)}%)',
+                  fontSize: 11,
+                  color: Colors.white.withValues(alpha: 0.55),
+                  fontWeight: FontWeight.w400,
+                ),
+              ],
             ),
           ],
-        ),
-      ),
+        );
+      },
     );
   }
-}
 
-// ─────────────────────────────────────────────────────────────────────────────
-// STATS SECTION
-// ─────────────────────────────────────────────────────────────────────────────
-
-class _StatsSection extends StatelessWidget {
-  const _StatsSection();
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+  Widget _rateLoadingPlaceholder() {
+    return Row(
       children: [
-        const SizedBox(height: 20),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: AppText('نظرة عامة', fontSize: 16, fontWeight: FontWeight.w700),
-        ),
-        const SizedBox(height: 12),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Row(
-            children: [
-              Expanded(
-                child: BlocBuilder<ExchangeRatesCubit,
-                    SigninState<List<ExchangeRateModel>>>(
-                  builder: (context, state) {
-                    final count = state.maybeWhen(
-                      success: (list) => list.length,
-                      orElse: () => 0,
-                    );
-                    return _StatCard(
-                      label: 'أسعار الصرف',
-                      value: '$count',
-                      icon: Icons.currency_exchange_rounded,
-                      color: AppColors.kPrimaryColor,
-                    );
-                  },
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: BlocBuilder<CurrenciesCubit,
-                    SigninState<List<CurrencyModel>>>(
-                  builder: (context, state) {
-                    final count = state.maybeWhen(
-                      success: (list) => list.length,
-                      orElse: () => 0,
-                    );
-                    return _StatCard(
-                      label: 'العملات',
-                      value: '$count',
-                      icon: Icons.account_balance_wallet_rounded,
-                      color: const Color(0xFF3B82F6),
-                    );
-                  },
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 12),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Row(
-            children: [
-              Expanded(
-                child: BlocBuilder<ExchangeRequestsCubit,
-                    SigninState<List<ExchangeRequestModel>>>(
-                  builder: (context, state) {
-                    final pending = state.maybeWhen(
-                      success: (list) =>
-                          list.where((r) => r.status == 'pending').length,
-                      orElse: () => 0,
-                    );
-                    return _StatCard(
-                      label: 'طلبات معلقة',
-                      value: '$pending',
-                      icon: Icons.pending_actions_rounded,
-                      color: AppColors.kWarningColor,
-                    );
-                  },
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: BlocBuilder<ExchangeRequestsCubit,
-                    SigninState<List<ExchangeRequestModel>>>(
-                  builder: (context, state) {
-                    final accepted = state.maybeWhen(
-                      success: (list) =>
-                          list.where((r) => r.status == 'accepted').length,
-                      orElse: () => 0,
-                    );
-                    return _StatCard(
-                      label: 'طلبات مقبولة',
-                      value: '$accepted',
-                      icon: Icons.check_circle_outline_rounded,
-                      color: AppColors.kSuccessColor,
-                    );
-                  },
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _StatCard extends StatelessWidget {
-  final String label;
-  final String value;
-  final IconData icon;
-  final Color color;
-
-  const _StatCard({
-    required this.label,
-    required this.value,
-    required this.icon,
-    required this.color,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: isDark ? AppColors.kCardDark : Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          if (!isDark)
-            BoxShadow(
-              color: color.withOpacity(0.08),
-              blurRadius: 12,
-              offset: const Offset(0, 4),
-            ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.12),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(icon, color: color, size: 22),
-          ),
-          const SizedBox(width: 12),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              AppText(value, fontSize: 24, fontWeight: FontWeight.w700),
-              AppText(label, fontSize: 11, color: AppColors.kGreyColor,
-                  fontWeight: FontWeight.w400),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// EXCHANGE RATES SECTION
-// ─────────────────────────────────────────────────────────────────────────────
-
-class _ExchangeRatesSection extends StatelessWidget {
-  const _ExchangeRatesSection();
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const SizedBox(height: 20),
-        _SectionHeader(
-          title: 'أسعار الصرف',
-          icon: Icons.currency_exchange_rounded,
-          iconColor: AppColors.kPrimaryColor,
-        ),
-        const SizedBox(height: 12),
-        BlocConsumer<ExchangeRatesCubit, SigninState<List<ExchangeRateModel>>>(
-          listenWhen: (prev, curr) =>
-              prev.maybeWhen(loading: () => true, orElse: () => false),
-          listener: (context, state) {
-            state.maybeWhen(
-              error: (msg) => AppSnackbar.showError(context, msg),
-              orElse: () {},
-            );
-          },
-          builder: (context, state) {
-            return state.when(
-              initial: () => const SizedBox.shrink(),
-              loading: () => _buildShimmer(),
-              success: (rates) => _buildRatesList(context, rates),
-              error: (msg) => _buildError(msg, context),
-            );
-          },
-        ),
-      ],
-    );
-  }
-
-  Widget _buildShimmer() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Column(
-        children: List.generate(
-          3,
-          (_) => Container(
-            margin: const EdgeInsets.only(bottom: 10),
+        Expanded(
+          child: Container(
             height: 72,
             decoration: BoxDecoration(
-              color: Colors.grey.withOpacity(0.15),
+              color: Colors.white.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(14),
             ),
           ),
         ),
-      ),
-    );
-  }
-
-  Widget _buildError(String msg, BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: AppColors.kRedColor.withOpacity(0.08),
-          borderRadius: BorderRadius.circular(14),
-        ),
-        child: Row(
-          children: [
-            const Icon(Icons.error_outline_rounded,
-                color: AppColors.kRedColor, size: 20),
-            const SizedBox(width: 10),
-            Expanded(
-              child: AppText(msg, fontSize: 13, color: AppColors.kRedColor,
-                  fontWeight: FontWeight.w400),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Container(
+            height: 72,
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(14),
             ),
-            TextButton(
-              onPressed: () =>
-                  context.read<ExchangeRatesCubit>().fetchRates(),
-              child: AppText('إعادة', fontSize: 12,
-                  color: AppColors.kPrimaryColor),
-            ),
-          ],
+          ),
         ),
-      ),
+      ],
     );
   }
 
-  Widget _buildRatesList(
-      BuildContext context, List<ExchangeRateModel> rates) {
-    if (rates.isEmpty) {
-      return Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        child: AppText('لا توجد أسعار صرف', color: AppColors.kGreyColor,
-            textAlign: TextAlign.center),
-      );
-    }
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Column(
-        children: rates
-            .map((rate) => _RateCard(rate: rate))
-            .toList(),
-      ),
-    );
-  }
-}
-
-class _RateCard extends StatelessWidget {
-  final ExchangeRateModel rate;
-
-  const _RateCard({required this.rate});
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+  Widget _rateNotFound() {
     return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
       decoration: BoxDecoration(
-        color: isDark ? AppColors.kCardDark : Colors.white,
+        color: Colors.white.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(14),
-        boxShadow: [
-          if (!isDark)
-            BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
-        ],
+        border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
       ),
       child: Row(
         children: [
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  AppColors.kPrimaryColor,
-                  AppColors.kSecondColor,
-                ],
-              ),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: AppText(
-              '${rate.fromCurrencyCode ?? '—'} → ${rate.toCurrencyCode ?? '—'}',
-              fontSize: 12,
-              color: Colors.white,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          const SizedBox(width: 12),
+          const Icon(Icons.info_outline_rounded,
+              color: Colors.white70, size: 18),
+          const SizedBox(width: 10),
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    _RateBadge(
-                      label: 'شراء',
-                      value: rate.buyRate?.toStringAsFixed(0) ?? '—',
-                      color: AppColors.kSuccessColor,
-                    ),
-                    const SizedBox(width: 8),
-                    _RateBadge(
-                      label: 'بيع',
-                      value: rate.sellRate?.toStringAsFixed(0) ?? '—',
-                      color: AppColors.kRedColor,
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          IconButton(
-            onPressed: () => _showEditSheet(context, rate),
-            icon: Icon(
-              Icons.edit_outlined,
-              color: AppColors.kPrimaryColor,
-              size: 20,
-            ),
-            style: IconButton.styleFrom(
-              backgroundColor: AppColors.kPrimaryColor.withOpacity(0.08),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
+            child: AppText(
+              'لا يوجد سعر صرف لزوج $_fromCode / $_toCode',
+              fontSize: 12,
+              color: Colors.white.withValues(alpha: 0.75),
+              fontWeight: FontWeight.w400,
+              maxLines: 2,
             ),
           ),
         ],
@@ -789,52 +608,257 @@ class _RateCard extends StatelessWidget {
     );
   }
 
-  void _showEditSheet(BuildContext context, ExchangeRateModel rate) {
-    final cubit = context.read<ExchangeRatesCubit>();
-    cubit.prepareForEdit(rate);
+  String _fmtRate(double? v) {
+    if (v == null) return '—';
+    return v >= 100 ? v.toStringAsFixed(0) : v.toStringAsFixed(2);
+  }
 
+  // ── Picker opener ─────────────────────────────────────────────────────────
+
+  void _showPicker(
+      BuildContext context, List<CurrencyModel> currencies, bool isFrom) {
+    final currCubit = context.read<CurrenciesCubit>();
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (_) => BlocProvider.value(
-        value: cubit,
-        child: _EditRateSheet(rate: rate),
+        value: currCubit,
+        child: _CurrencyPickerSheet(
+          selectedCode: isFrom ? _fromCode : _toCode,
+          onSelected: (code) => setState(() {
+            if (isFrom) {
+              _fromCode = code;
+            } else {
+              _toCode = code;
+            }
+          }),
+        ),
       ),
     );
   }
 }
 
-class _RateBadge extends StatelessWidget {
+// ─────────────────────────────────────────────────────────────────────────────
+// HERO STAT  (inside the gradient card)
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _HeroStat extends StatelessWidget {
+  final IconData icon;
   final String label;
   final String value;
-  final Color color;
+  final Color valueColor;
 
-  const _RateBadge({
+  const _HeroStat({
+    required this.icon,
     required this.label,
     required this.value,
-    required this.color,
+    this.valueColor = Colors.white,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(6),
+    return Column(
+      children: [
+        Icon(icon, color: Colors.white.withValues(alpha: 0.65), size: 17),
+        const SizedBox(height: 5),
+        AppText(value,
+            fontSize: 22, color: valueColor, fontWeight: FontWeight.w700),
+        const SizedBox(height: 2),
+        AppText(label,
+            fontSize: 9,
+            color: Colors.white.withValues(alpha: 0.7),
+            fontWeight: FontWeight.w400),
+      ],
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CURRENCY DROPDOWN BUTTON
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _CurrencyDropdownButton extends StatelessWidget {
+  final List<CurrencyModel> currencies;
+  final String selectedCode;
+  final String label;
+  final VoidCallback onTap;
+
+  const _CurrencyDropdownButton({
+    required this.currencies,
+    required this.selectedCode,
+    required this.label,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    CurrencyModel? sel;
+    for (final c in currencies) {
+      if (c.code == selectedCode) {
+        sel = c;
+        break;
+      }
+    }
+
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding:
+            const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.14),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+              color: Colors.white.withValues(alpha: 0.24), width: 1),
+        ),
+        child: Column(
+          children: [
+            AppText(label,
+                fontSize: 9,
+                color: Colors.white.withValues(alpha: 0.6),
+                fontWeight: FontWeight.w400),
+            const SizedBox(height: 4),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                if (sel?.symbol != null) ...[
+                  AppText(sel!.symbol!,
+                      fontSize: 18,
+                      color: Colors.white,
+                      fontWeight: FontWeight.w700),
+                  const SizedBox(width: 5),
+                ],
+                AppText(selectedCode,
+                    fontSize: 15,
+                    color: Colors.white,
+                    fontWeight: FontWeight.w700),
+                const SizedBox(width: 2),
+                Icon(Icons.arrow_drop_down_rounded,
+                    color: Colors.white.withValues(alpha: 0.7), size: 18),
+              ],
+            ),
+            if (sel?.name != null)
+              AppText(sel!.name!,
+                  fontSize: 9,
+                  color: Colors.white.withValues(alpha: 0.6),
+                  fontWeight: FontWeight.w400,
+                  maxLines: 1),
+          ],
+        ),
       ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// RATE BOX
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _RateBox extends StatelessWidget {
+  final String label;
+  final String sublabel;
+  final double? value;
+  final Color color;
+  final IconData icon;
+
+  const _RateBox({
+    required this.label,
+    required this.sublabel,
+    required this.value,
+    required this.color,
+    required this.icon,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final fmtValue = value == null
+        ? '—'
+        : value! >= 100
+            ? value!.toStringAsFixed(0)
+            : value!.toStringAsFixed(2);
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+            color: color.withValues(alpha: 0.35), width: 1),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          AppText(label, fontSize: 10, color: color, fontWeight: FontWeight.w400),
-          const SizedBox(width: 4),
-          AppText(value, fontSize: 12, color: color, fontWeight: FontWeight.w700),
+          Row(
+            children: [
+              Icon(icon, color: color, size: 13),
+              const SizedBox(width: 4),
+              AppText(label,
+                  fontSize: 10,
+                  color: color,
+                  fontWeight: FontWeight.w600),
+            ],
+          ),
+          const SizedBox(height: 6),
+          AppText(fmtValue,
+              fontSize: 20,
+              color: Colors.white,
+              fontWeight: FontWeight.w700),
+          AppText(sublabel,
+              fontSize: 9,
+              color: Colors.white.withValues(alpha: 0.55),
+              fontWeight: FontWeight.w400),
         ],
       ),
     );
   }
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// EDIT RATE ICON BUTTON
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _EditRateIconButton extends StatelessWidget {
+  final ExchangeRateModel rate;
+  final ExchangeRatesCubit ratesCubit;
+
+  const _EditRateIconButton(
+      {required this.rate, required this.ratesCubit});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () {
+        ratesCubit.prepareForEdit(rate);
+        showModalBottomSheet(
+          context: context,
+          isScrollControlled: true,
+          backgroundColor: Colors.transparent,
+          builder: (_) => BlocProvider.value(
+            value: ratesCubit,
+            child: _EditRateSheet(rate: rate),
+          ),
+        );
+      },
+      child: Container(
+        width: 42,
+        height: 72,
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.14),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+              color: Colors.white.withValues(alpha: 0.2)),
+        ),
+        child: const Icon(Icons.edit_outlined,
+            color: Colors.white, size: 18),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// EDIT RATE BOTTOM SHEET
+// ─────────────────────────────────────────────────────────────────────────────
 
 class _EditRateSheet extends StatelessWidget {
   final ExchangeRateModel rate;
@@ -844,27 +868,26 @@ class _EditRateSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cubit = context.read<ExchangeRatesCubit>();
-    return BlocConsumer<ExchangeRatesCubit, SigninState<List<ExchangeRateModel>>>(
-      listenWhen: (prev, curr) =>
-          prev.maybeWhen(loading: () => true, orElse: () => false),
+    return BlocConsumer<ExchangeRatesCubit,
+        SigninState<List<ExchangeRateModel>>>(
+      listenWhen: (p, c) =>
+          p.maybeWhen(loading: () => true, orElse: () => false),
       listener: (context, state) {
         state.maybeWhen(
           success: (_) {
+            AppSnackbar.showSuccess(context, 'تم تحديث سعر الصرف بنجاح');
             Navigator.pop(context);
-            AppSnackbar.showSuccess(context, 'تم تحديث السعر بنجاح');
           },
           error: (msg) => AppSnackbar.showError(context, msg),
           orElse: () {},
         );
       },
       builder: (context, state) {
-        final isLoading = state.maybeWhen(
-          loading: () => true,
-          orElse: () => false,
-        );
-        return _BottomSheetContainer(
+        final isLoading =
+            state.maybeWhen(loading: () => true, orElse: () => false);
+        return _BottomSheet(
           title:
-              'تعديل: ${rate.fromCurrencyCode} → ${rate.toCurrencyCode}',
+              'تعديل سعر ${rate.fromCurrencyCode} / ${rate.toCurrencyCode}',
           child: Form(
             key: cubit.formKey,
             child: Column(
@@ -887,7 +910,7 @@ class _EditRateSheet extends StatelessWidget {
                   validator: (v) =>
                       v == null || v.isEmpty ? 'مطلوب' : null,
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 10),
                 AppButton(
                   text: 'حفظ التغييرات',
                   onPressed: () => cubit.updateRate(rate.id!),
@@ -904,60 +927,178 @@ class _EditRateSheet extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// CURRENCIES SECTION
+// CURRENCY PICKER BOTTOM SHEET
 // ─────────────────────────────────────────────────────────────────────────────
 
-class _CurrenciesSection extends StatelessWidget {
-  const _CurrenciesSection();
+class _CurrencyPickerSheet extends StatefulWidget {
+  final String selectedCode;
+  final ValueChanged<String> onSelected;
+
+  const _CurrencyPickerSheet({
+    required this.selectedCode,
+    required this.onSelected,
+  });
+
+  @override
+  State<_CurrencyPickerSheet> createState() => _CurrencyPickerSheetState();
+}
+
+class _CurrencyPickerSheetState extends State<_CurrencyPickerSheet> {
+  String _query = '';
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const SizedBox(height: 20),
-        _SectionHeader(
-          title: 'العملات',
-          icon: Icons.account_balance_wallet_rounded,
-          iconColor: const Color(0xFF3B82F6),
-          trailing: IconButton(
-            onPressed: () => _showAddSheet(context),
-            icon: const Icon(Icons.add_rounded, color: Color(0xFF3B82F6)),
-            style: IconButton.styleFrom(
-              backgroundColor: const Color(0xFF3B82F6).withOpacity(0.1),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-            ),
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Container(
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.kCardDark : Colors.white,
+        borderRadius:
+            const BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      padding: EdgeInsets.only(
+        left: 16,
+        right: 16,
+        top: 12,
+        bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _handle(),
+          const SizedBox(height: 14),
+          const AppText('اختر العملة',
+              fontSize: 16, fontWeight: FontWeight.w700),
+          const SizedBox(height: 14),
+          _searchField(isDark),
+          const SizedBox(height: 12),
+          BlocBuilder<CurrenciesCubit, SigninState<List<CurrencyModel>>>(
+            builder: (context, state) {
+              final all = state.maybeWhen(
+                success: (c) => c,
+                orElse: () => <CurrencyModel>[],
+              );
+              final filtered = _query.isEmpty
+                  ? all
+                  : all
+                      .where((c) =>
+                          (c.code?.toLowerCase().contains(_query) ??
+                              false) ||
+                          (c.name?.toLowerCase().contains(_query) ??
+                              false) ||
+                          (c.symbol?.toLowerCase().contains(_query) ??
+                              false))
+                      .toList();
+
+              return ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxHeight: min(
+                      filtered.length * 66.0 + 8, 300),
+                ),
+                child: ListView.separated(
+                  shrinkWrap: true,
+                  itemCount: filtered.length,
+                  separatorBuilder: (_, __) => Divider(
+                    height: 1,
+                    color: isDark
+                        ? Colors.white.withValues(alpha: 0.05)
+                        : Colors.black.withValues(alpha: 0.05),
+                  ),
+                  itemBuilder: (ctx, i) {
+                    final c = filtered[i];
+                    return _CurrencyPickerItem(
+                      currency: c,
+                      isSelected: c.code == widget.selectedCode,
+                      onTap: () {
+                        widget.onSelected(c.code!);
+                        Navigator.pop(context);
+                      },
+                      onLongPress: () => _openEdit(context, c),
+                    );
+                  },
+                ),
+              );
+            },
           ),
-        ),
-        const SizedBox(height: 12),
-        BlocConsumer<CurrenciesCubit, SigninState<List<CurrencyModel>>>(
-          listenWhen: (prev, curr) =>
-              prev.maybeWhen(loading: () => true, orElse: () => false),
-          listener: (context, state) {
-            state.maybeWhen(
-              error: (msg) => AppSnackbar.showError(context, msg),
-              orElse: () {},
-            );
-          },
-          builder: (context, state) {
-            return state.when(
-              initial: () => const SizedBox.shrink(),
-              loading: () => _buildShimmer(),
-              success: (currencies) => _buildGrid(context, currencies),
-              error: (msg) => Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: AppText(msg, color: AppColors.kRedColor),
-              ),
-            );
-          },
-        ),
-      ],
+          const SizedBox(height: 12),
+          _addButton(context),
+        ],
+      ),
     );
   }
 
-  void _showAddSheet(BuildContext context) {
+  Widget _handle() {
+    return Container(
+      width: 40,
+      height: 4,
+      decoration: BoxDecoration(
+        color: AppColors.kGreyColor.withValues(alpha: 0.3),
+        borderRadius: BorderRadius.circular(2),
+      ),
+    );
+  }
+
+  Widget _searchField(bool isDark) {
+    return TextField(
+      onChanged: (v) => setState(() => _query = v.toLowerCase().trim()),
+      style: const TextStyle(fontFamily: 'Cairo-Bold', fontSize: 13),
+      decoration: InputDecoration(
+        hintText: 'ابحث عن عملة...',
+        hintStyle: const TextStyle(
+            fontFamily: 'Cairo-Bold',
+            fontSize: 13,
+            color: AppColors.kGreyColor),
+        prefixIcon: const Icon(Icons.search_rounded,
+            color: AppColors.kGreyColor, size: 20),
+        filled: true,
+        fillColor: isDark
+            ? Colors.white.withValues(alpha: 0.06)
+            : const Color(0xFFF0F4F8),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide.none,
+        ),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      ),
+    );
+  }
+
+  Widget _addButton(BuildContext context) {
+    return SizedBox(
+      width: double.infinity,
+      child: OutlinedButton.icon(
+        onPressed: () => _openAdd(context),
+        style: OutlinedButton.styleFrom(
+          foregroundColor: AppColors.kPrimaryColor,
+          side: BorderSide(
+              color: AppColors.kPrimaryColor.withValues(alpha: 0.45)),
+          shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12)),
+          padding: const EdgeInsets.symmetric(vertical: 13),
+        ),
+        icon: const Icon(Icons.add_circle_outline_rounded, size: 18),
+        label: const AppText('إضافة عملة جديدة',
+            fontSize: 13, color: AppColors.kPrimaryColor),
+      ),
+    );
+  }
+
+  void _openEdit(BuildContext context, CurrencyModel currency) {
+    final cubit = context.read<CurrenciesCubit>();
+    cubit.prepareForEdit(currency);
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => BlocProvider.value(
+        value: cubit,
+        child: _CurrencyFormSheet(
+            isEdit: true, currencyId: currency.id),
+      ),
+    );
+  }
+
+  void _openAdd(BuildContext context) {
     final cubit = context.read<CurrenciesCubit>();
     cubit.prepareForAdd();
     showModalBottomSheet(
@@ -970,220 +1111,112 @@ class _CurrenciesSection extends StatelessWidget {
       ),
     );
   }
-
-  Widget _buildShimmer() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: GridView.count(
-        crossAxisCount: 3,
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        crossAxisSpacing: 10,
-        mainAxisSpacing: 10,
-        childAspectRatio: 1.0,
-        children: List.generate(
-          6,
-          (_) => Container(
-            decoration: BoxDecoration(
-              color: Colors.grey.withOpacity(0.15),
-              borderRadius: BorderRadius.circular(14),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildGrid(BuildContext context, List<CurrencyModel> currencies) {
-    if (currencies.isEmpty) {
-      return Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        child: AppText('لا توجد عملات', color: AppColors.kGreyColor,
-            textAlign: TextAlign.center),
-      );
-    }
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: GridView.count(
-        crossAxisCount: 3,
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        crossAxisSpacing: 10,
-        mainAxisSpacing: 10,
-        childAspectRatio: 0.9,
-        children:
-            currencies.map((c) => _CurrencyCard(currency: c)).toList(),
-      ),
-    );
-  }
 }
 
-class _CurrencyCard extends StatelessWidget {
-  final CurrencyModel currency;
+// ─────────────────────────────────────────────────────────────────────────────
+// CURRENCY PICKER LIST ITEM
+// ─────────────────────────────────────────────────────────────────────────────
 
-  const _CurrencyCard({required this.currency});
+class _CurrencyPickerItem extends StatelessWidget {
+  final CurrencyModel currency;
+  final bool isSelected;
+  final VoidCallback onTap;
+  final VoidCallback onLongPress;
+
+  const _CurrencyPickerItem({
+    required this.currency,
+    required this.isSelected,
+    required this.onTap,
+    required this.onLongPress,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     final isActive = currency.isActive ?? false;
-    final activeColor =
-        isActive ? AppColors.kSuccessColor : AppColors.kGreyColor;
+    final gradientColors = isActive
+        ? [AppColors.kPrimaryColor, const Color(0xFF047857)]
+        : [AppColors.kGreyColor, const Color(0xFF94A3B8)];
 
-    return GestureDetector(
-      onLongPress: () => _showOptions(context),
-      child: Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: isDark ? AppColors.kCardDark : Colors.white,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(
-            color: isActive
-                ? AppColors.kSuccessColor.withOpacity(0.2)
-                : Colors.transparent,
-          ),
-          boxShadow: [
-            if (!isDark)
-              BoxShadow(
-                color: Colors.black.withOpacity(0.05),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
-              ),
-          ],
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: activeColor.withOpacity(0.1),
-                shape: BoxShape.circle,
-              ),
-              alignment: Alignment.center,
-              child: AppText(
-                currency.symbol ?? '',
-                fontSize: 16,
-                color: activeColor,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            const SizedBox(height: 8),
-            AppText(
-              currency.code ?? '',
-              fontSize: 13,
-              fontWeight: FontWeight.w700,
-            ),
-            const SizedBox(height: 2),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-              decoration: BoxDecoration(
-                color: activeColor.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(4),
-              ),
-              child: AppText(
-                isActive ? 'نشط' : 'معطل',
-                fontSize: 9,
-                color: activeColor,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _showOptions(BuildContext context) {
-    final cubit = context.read<CurrenciesCubit>();
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      builder: (ctx) => BlocProvider.value(
-        value: cubit,
-        child: _CurrencyOptionsSheet(currency: currency),
-      ),
-    );
-  }
-}
-
-class _CurrencyOptionsSheet extends StatelessWidget {
-  final CurrencyModel currency;
-
-  const _CurrencyOptionsSheet({required this.currency});
-
-  @override
-  Widget build(BuildContext context) {
-    final cubit = context.read<CurrenciesCubit>();
-    return _BottomSheetContainer(
-      title: currency.name ?? '',
-      child: Column(
-        children: [
-          _OptionTile(
-            icon: Icons.edit_outlined,
-            label: 'تعديل العملة',
-            color: AppColors.kPrimaryColor,
-            onTap: () {
-              Navigator.pop(context);
-              cubit.prepareForEdit(currency);
-              showModalBottomSheet(
-                context: context,
-                isScrollControlled: true,
-                backgroundColor: Colors.transparent,
-                builder: (_) => BlocProvider.value(
-                  value: cubit,
-                  child: _CurrencyFormSheet(
-                    isEdit: true,
-                    currencyId: currency.id,
+    return Material(
+      color: isSelected
+          ? AppColors.kPrimaryColor.withValues(alpha: 0.05)
+          : Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        onLongPress: onLongPress,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 10),
+          child: Row(
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: gradientColors,
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
                   ),
+                  shape: BoxShape.circle,
                 ),
-              );
-            },
+                alignment: Alignment.center,
+                child: AppText(currency.symbol ?? '',
+                    fontSize: 15,
+                    color: Colors.white,
+                    fontWeight: FontWeight.w700),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    AppText(currency.code ?? '',
+                        fontSize: 14, fontWeight: FontWeight.w700),
+                    AppText(currency.name ?? '',
+                        fontSize: 11,
+                        color: AppColors.kGreyColor,
+                        fontWeight: FontWeight.w400),
+                  ],
+                ),
+              ),
+              if (!isActive)
+                Container(
+                  margin: const EdgeInsets.only(left: 6),
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 7, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: AppColors.kGreyColor.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(5),
+                  ),
+                  child: const AppText('معطل',
+                      fontSize: 9,
+                      color: AppColors.kGreyColor,
+                      fontWeight: FontWeight.w600),
+                ),
+              if (isSelected)
+                const Padding(
+                  padding: EdgeInsets.only(left: 8),
+                  child: Icon(Icons.check_circle_rounded,
+                      color: AppColors.kPrimaryColor, size: 20),
+                )
+              else
+                Padding(
+                  padding: const EdgeInsets.only(left: 4),
+                  child: Icon(Icons.more_vert_rounded,
+                      size: 16,
+                      color: AppColors.kGreyColor.withValues(alpha: 0.5)),
+                ),
+            ],
           ),
-          const Divider(height: 1),
-          _OptionTile(
-            icon: Icons.delete_outline_rounded,
-            label: 'حذف العملة',
-            color: AppColors.kRedColor,
-            onTap: () {
-              Navigator.pop(context);
-              _confirmDelete(context, cubit);
-            },
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _confirmDelete(BuildContext context, CurrenciesCubit cubit) {
-    showDialog(
-      context: context,
-      builder: (dlgCtx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: AppText('حذف العملة'),
-        content: AppText(
-          'هل أنت متأكد من حذف ${currency.name}؟',
-          maxLines: 2,
-          fontWeight: FontWeight.w400,
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dlgCtx),
-            child: AppText('إلغاء', color: AppColors.kGreyColor),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(dlgCtx);
-              cubit.deleteCurrency(currency.id!);
-            },
-            child: AppText('حذف', color: AppColors.kRedColor),
-          ),
-        ],
       ),
     );
   }
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CURRENCY FORM SHEET  (add / edit)
+// ─────────────────────────────────────────────────────────────────────────────
 
 class _CurrencyFormSheet extends StatefulWidget {
   final bool isEdit;
@@ -1200,16 +1233,16 @@ class _CurrencyFormSheetState extends State<_CurrencyFormSheet> {
   Widget build(BuildContext context) {
     final cubit = context.read<CurrenciesCubit>();
     return BlocConsumer<CurrenciesCubit, SigninState<List<CurrencyModel>>>(
-      listenWhen: (prev, curr) =>
-          prev.maybeWhen(loading: () => true, orElse: () => false),
+      listenWhen: (p, c) =>
+          p.maybeWhen(loading: () => true, orElse: () => false),
       listener: (context, state) {
         state.maybeWhen(
           success: (_) {
-            Navigator.pop(context);
             AppSnackbar.showSuccess(
               context,
               widget.isEdit ? 'تم تحديث العملة' : 'تمت إضافة العملة',
             );
+            Navigator.pop(context);
           },
           error: (msg) => AppSnackbar.showError(context, msg),
           orElse: () {},
@@ -1218,7 +1251,7 @@ class _CurrencyFormSheetState extends State<_CurrencyFormSheet> {
       builder: (context, state) {
         final isLoading =
             state.maybeWhen(loading: () => true, orElse: () => false);
-        return _BottomSheetContainer(
+        return _BottomSheet(
           title: widget.isEdit ? 'تعديل العملة' : 'إضافة عملة جديدة',
           child: Form(
             key: cubit.formKey,
@@ -1246,29 +1279,32 @@ class _CurrencyFormSheetState extends State<_CurrencyFormSheet> {
                       v == null || v.isEmpty ? 'مطلوب' : null,
                 ),
                 Padding(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 5, vertical: 4),
+                  padding: const EdgeInsets.fromLTRB(5, 6, 5, 4),
                   child: Row(
                     children: [
-                      AppText('نشط', fontSize: 14),
+                      const AppText('حالة العملة', fontSize: 14),
                       const Spacer(),
                       StatefulBuilder(
-                        builder: (context, setSwitchState) {
-                          return Switch.adaptive(
-                            value: cubit.isActiveValue,
-                            activeColor: AppColors.kPrimaryColor,
-                            onChanged: (v) => setSwitchState(
-                              () => cubit.isActiveValue = v,
-                            ),
-                          );
-                        },
+                        builder: (_, set) => Switch.adaptive(
+                          value: cubit.isActiveValue,
+                          activeColor: AppColors.kPrimaryColor,
+                          onChanged: (v) =>
+                              set(() => cubit.isActiveValue = v),
+                        ),
+                      ),
+                      AppText(
+                        cubit.isActiveValue ? 'نشطة' : 'معطلة',
+                        fontSize: 12,
+                        color: cubit.isActiveValue
+                            ? AppColors.kSuccessColor
+                            : AppColors.kGreyColor,
                       ),
                     ],
                   ),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 10),
                 AppButton(
-                  text: widget.isEdit ? 'حفظ التعديلات' : 'إضافة',
+                  text: widget.isEdit ? 'حفظ التعديلات' : 'إضافة العملة',
                   onPressed: () => widget.isEdit
                       ? cubit.updateCurrency(widget.currencyId!)
                       : cubit.addCurrency(),
@@ -1287,527 +1323,258 @@ class _CurrencyFormSheetState extends State<_CurrencyFormSheet> {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// EXCHANGE REQUESTS SECTION
+// RECENT COMPLETED REQUESTS CARD
 // ─────────────────────────────────────────────────────────────────────────────
 
-class _ExchangeRequestsSection extends StatefulWidget {
-  const _ExchangeRequestsSection();
-
-  @override
-  State<_ExchangeRequestsSection> createState() =>
-      _ExchangeRequestsSectionState();
-}
-
-class _ExchangeRequestsSectionState extends State<_ExchangeRequestsSection> {
-  static const _filters = [
-    ('all', 'الكل'),
-    ('pending', 'معلق'),
-    ('accepted', 'مقبول'),
-    ('rejected', 'مرفوض'),
-    ('suspended', 'موقوف'),
-  ];
-
-  @override
-  Widget build(BuildContext context) {
-    final cubit = context.read<ExchangeRequestsCubit>();
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const SizedBox(height: 20),
-        _SectionHeader(
-          title: 'سجل طلبات الصرف',
-          icon: Icons.receipt_long_rounded,
-          iconColor: AppColors.kWarningColor,
-        ),
-        const SizedBox(height: 12),
-        SizedBox(
-          height: 36,
-          child: BlocBuilder<ExchangeRequestsCubit,
-              SigninState<List<ExchangeRequestModel>>>(
-            builder: (context, state) {
-              final selected = cubit.statusFilter;
-              return ListView(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                children: _filters.map((f) {
-                  final isSelected = f.$1 == selected;
-                  return Padding(
-                    padding: const EdgeInsets.only(right: 8),
-                    child: GestureDetector(
-                      onTap: () => setState(() => cubit.setFilter(f.$1)),
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 200),
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 14, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: isSelected
-                              ? AppColors.kPrimaryColor
-                              : AppColors.kPrimaryColor.withOpacity(0.08),
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: AppText(
-                          f.$2,
-                          fontSize: 12,
-                          color: isSelected
-                              ? Colors.white
-                              : AppColors.kPrimaryColor,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  );
-                }).toList(),
-              );
-            },
-          ),
-        ),
-        const SizedBox(height: 12),
-        BlocConsumer<ExchangeRequestsCubit,
-            SigninState<List<ExchangeRequestModel>>>(
-          listenWhen: (prev, curr) =>
-              prev.maybeWhen(loading: () => true, orElse: () => false),
-          listener: (context, state) {
-            state.maybeWhen(
-              error: (msg) => AppSnackbar.showError(context, msg),
-              orElse: () {},
-            );
-          },
-          builder: (context, state) {
-            return state.when(
-              initial: () => const SizedBox.shrink(),
-              loading: () => _buildShimmer(),
-              success: (requests) => _buildList(context, requests),
-              error: (msg) => Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: AppText(msg, color: AppColors.kRedColor),
-              ),
-            );
-          },
-        ),
-      ],
-    );
-  }
-
-  Widget _buildShimmer() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Column(
-        children: List.generate(
-          4,
-          (_) => Container(
-            margin: const EdgeInsets.only(bottom: 10),
-            height: 120,
-            decoration: BoxDecoration(
-              color: Colors.grey.withOpacity(0.15),
-              borderRadius: BorderRadius.circular(14),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildList(
-      BuildContext context, List<ExchangeRequestModel> requests) {
-    if (requests.isEmpty) {
-      return Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
-        child: Center(
-          child: Column(
-            children: [
-              Icon(Icons.inbox_rounded,
-                  size: 52, color: AppColors.kGreyColor.withOpacity(0.4)),
-              const SizedBox(height: 12),
-              AppText('لا توجد طلبات',
-                  color: AppColors.kGreyColor, fontSize: 14),
-            ],
-          ),
-        ),
-      );
-    }
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Column(
-        children: requests.map((r) => _RequestCard(request: r)).toList(),
-      ),
-    );
-  }
-}
-
-class _RequestCard extends StatelessWidget {
-  final ExchangeRequestModel request;
-
-  const _RequestCard({required this.request});
-
-  Color get _statusColor {
-    switch (request.status?.toLowerCase()) {
-      case 'accepted':
-        return AppColors.kSuccessColor;
-      case 'rejected':
-        return AppColors.kRedColor;
-      case 'suspended':
-        return AppColors.kGreyColor;
-      default:
-        return AppColors.kWarningColor;
-    }
-  }
-
-  String get _statusLabel {
-    switch (request.status?.toLowerCase()) {
-      case 'accepted':
-        return 'مقبول';
-      case 'rejected':
-        return 'مرفوض';
-      case 'suspended':
-        return 'موقوف';
-      default:
-        return 'معلق';
-    }
-  }
-
-  IconData get _statusIcon {
-    switch (request.status?.toLowerCase()) {
-      case 'accepted':
-        return Icons.check_circle_rounded;
-      case 'rejected':
-        return Icons.cancel_rounded;
-      case 'suspended':
-        return Icons.pause_circle_filled_rounded;
-      default:
-        return Icons.hourglass_empty_rounded;
-    }
-  }
+class _RecentRequestsCard extends StatelessWidget {
+  const _RecentRequestsCard();
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final isPending = request.status?.toLowerCase() == 'pending';
-
     return Container(
-      margin: const EdgeInsets.only(bottom: 10),
+      margin: const EdgeInsets.symmetric(horizontal: 16),
       decoration: BoxDecoration(
         color: isDark ? AppColors.kCardDark : Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(20),
         boxShadow: [
           if (!isDark)
-            BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 10,
-              offset: const Offset(0, 3),
-            ),
+            const BoxShadow(
+                color: Color(0x0A000000),
+                blurRadius: 16,
+                offset: Offset(0, 4)),
         ],
       ),
       child: Column(
         children: [
           Padding(
-            padding: const EdgeInsets.all(14),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            padding: const EdgeInsets.fromLTRB(16, 16, 12, 12),
+            child: Row(
               children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          AppText(
-                            request.requesterName ?? '—',
-                            fontSize: 14,
-                            fontWeight: FontWeight.w700,
-                          ),
-                          const SizedBox(height: 2),
-                          AppText(
-                            request.requesterPhone ?? '',
-                            fontSize: 11,
-                            color: AppColors.kGreyColor,
-                            fontWeight: FontWeight.w400,
-                          ),
-                        ],
-                      ),
-                    ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 10, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: _statusColor.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(_statusIcon,
-                              color: _statusColor, size: 12),
-                          const SizedBox(width: 4),
-                          AppText(
-                            _statusLabel,
-                            fontSize: 11,
-                            color: _statusColor,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 10),
                 Container(
-                  padding: const EdgeInsets.all(10),
+                  width: 38,
+                  height: 38,
                   decoration: BoxDecoration(
-                    color: AppColors.kPrimaryColor.withOpacity(0.05),
+                    gradient: const LinearGradient(
+                      colors: [
+                        AppColors.kSuccessColor,
+                        Color(0xFF15803D),
+                      ],
+                    ),
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: _InfoChip(
-                          label: 'من',
-                          value: request.fromCurrencyCode ?? '—',
-                        ),
-                      ),
-                      const Icon(Icons.arrow_forward_rounded,
-                          size: 14, color: AppColors.kGreyColor),
-                      Expanded(
-                        child: _InfoChip(
-                          label: 'إلى',
-                          value: request.toCurrencyCode ?? '—',
-                          align: TextAlign.center,
-                        ),
-                      ),
-                      Expanded(
-                        child: _InfoChip(
-                          label: 'المبلغ',
-                          value: _formatAmount(request.amount),
-                          align: TextAlign.end,
-                        ),
-                      ),
-                    ],
-                  ),
+                  child: const Icon(Icons.receipt_long_rounded,
+                      color: Colors.white, size: 20),
                 ),
-                if (request.convertedAmount != null) ...[
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      AppText(
-                        'المبلغ المحوّل: ',
-                        fontSize: 11,
-                        color: AppColors.kGreyColor,
-                        fontWeight: FontWeight.w400,
-                      ),
-                      AppText(
-                        _formatAmount(request.convertedAmount),
-                        fontSize: 12,
-                        color: AppColors.kSuccessColor,
-                        fontWeight: FontWeight.w700,
-                      ),
-                      AppText(
-                        ' ${request.toCurrencyCode ?? ''}',
-                        fontSize: 11,
-                        color: AppColors.kGreyColor,
-                        fontWeight: FontWeight.w400,
-                      ),
-                      const Spacer(),
-                      AppText(
-                        _formatDate(request.createdAt),
-                        fontSize: 10,
-                        color: AppColors.kGreyColor.withOpacity(0.7),
-                        fontWeight: FontWeight.w400,
-                      ),
-                    ],
-                  ),
-                ],
-                if (request.notes != null && request.notes!.isNotEmpty) ...[
-                  const SizedBox(height: 6),
-                  Row(
-                    children: [
-                      Icon(Icons.notes_rounded,
-                          size: 12, color: AppColors.kGreyColor),
-                      const SizedBox(width: 4),
-                      Expanded(
-                        child: AppText(
-                          request.notes!,
-                          fontSize: 11,
-                          color: AppColors.kGreyColor,
-                          fontWeight: FontWeight.w400,
-                          maxLines: 1,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
+                const SizedBox(width: 10),
+                const Expanded(
+                  child: AppText('آخر الطلبات المنجزة',
+                      fontSize: 15, fontWeight: FontWeight.w700),
+                ),
+                TextButton(
+                  onPressed: () => context.push('/history'),
+                  child: const AppText('السجل الكامل',
+                      fontSize: 12, color: AppColors.kPrimaryColor),
+                ),
               ],
             ),
           ),
-          if (isPending) ...[
-            const Divider(height: 1),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-              child: Row(
+          Divider(
+            height: 1,
+            color: isDark
+                ? Colors.white.withValues(alpha: 0.06)
+                : Colors.black.withValues(alpha: 0.06),
+          ),
+          BlocBuilder<ExchangeRequestsCubit,
+              SigninState<List<ExchangeRequestModel>>>(
+            builder: (context, state) {
+              return state.when(
+                initial: () => const SizedBox.shrink(),
+                loading: () => _shimmer(),
+                success: (all) {
+                  final done = all
+                      .where((r) => r.status == 'accepted')
+                      .take(5)
+                      .toList();
+                  if (done.isEmpty) {
+                    return const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 28),
+                      child: Center(
+                        child: AppText('لا توجد طلبات منجزة',
+                            color: AppColors.kGreyColor,
+                            fontWeight: FontWeight.w400),
+                      ),
+                    );
+                  }
+                  return Column(
+                    children: done
+                        .asMap()
+                        .entries
+                        .map((e) => _CompletedRow(
+                              request: e.value,
+                              isLast: e.key == done.length - 1,
+                            ))
+                        .toList(),
+                  );
+                },
+                error: (_) => const SizedBox.shrink(),
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _shimmer() {
+    return Padding(
+      padding: const EdgeInsets.all(14),
+      child: Column(
+        children: List.generate(
+          3,
+          (i) => Container(
+            margin: EdgeInsets.only(bottom: i < 2 ? 10 : 0),
+            height: 64,
+            decoration: BoxDecoration(
+              color: Colors.grey.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _CompletedRow extends StatelessWidget {
+  final ExchangeRequestModel request;
+  final bool isLast;
+
+  const _CompletedRow({required this.request, required this.isLast});
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Column(
+      children: [
+        Padding(
+          padding:
+              const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          child: Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: AppColors.kSuccessColor.withValues(alpha: 0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.check_rounded,
+                    color: AppColors.kSuccessColor, size: 20),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    AppText(request.requesterName ?? '—',
+                        fontSize: 13, fontWeight: FontWeight.w700),
+                    const SizedBox(height: 3),
+                    Row(
+                      children: [
+                        _CodeChip(
+                            code: request.fromCurrencyCode ?? '—',
+                            color: AppColors.kRedColor),
+                        const Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 4),
+                          child: Icon(Icons.arrow_back_rounded,
+                              size: 11,
+                              color: AppColors.kGreyColor),
+                        ),
+                        _CodeChip(
+                            code: request.toCurrencyCode ?? '—',
+                            color: AppColors.kSuccessColor),
+                        const SizedBox(width: 8),
+                        AppText(
+                          '${_fmt(request.amount)} ${request.fromCurrencyCode ?? ''}',
+                          fontSize: 11,
+                          color: AppColors.kGreyColor,
+                          fontWeight: FontWeight.w400,
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  Expanded(
-                    child: _ActionButton(
-                      label: 'قبول',
-                      icon: Icons.check_rounded,
-                      color: AppColors.kSuccessColor,
-                      onTap: () => _confirmAction(
-                        context,
-                        'قبول الطلب',
-                        'هل تريد قبول هذا الطلب؟',
-                        () => context
-                            .read<ExchangeRequestsCubit>()
-                            .acceptRequest(request.id!),
-                      ),
-                    ),
+                  AppText(
+                    '${_fmt(request.convertedAmount)} ${request.toCurrencyCode ?? ''}',
+                    fontSize: 13,
+                    color: AppColors.kSuccessColor,
+                    fontWeight: FontWeight.w700,
                   ),
-                  Expanded(
-                    child: _ActionButton(
-                      label: 'رفض',
-                      icon: Icons.close_rounded,
-                      color: AppColors.kRedColor,
-                      onTap: () => _confirmAction(
-                        context,
-                        'رفض الطلب',
-                        'هل تريد رفض هذا الطلب؟',
-                        () => context
-                            .read<ExchangeRequestsCubit>()
-                            .rejectRequest(request.id!),
-                      ),
-                    ),
-                  ),
-                  Expanded(
-                    child: _ActionButton(
-                      label: 'تعليق',
-                      icon: Icons.pause_rounded,
-                      color: AppColors.kGreyColor,
-                      onTap: () => _confirmAction(
-                        context,
-                        'تعليق الطلب',
-                        'هل تريد تعليق هذا الطلب؟',
-                        () => context
-                            .read<ExchangeRequestsCubit>()
-                            .suspendRequest(request.id!),
-                      ),
-                    ),
+                  const SizedBox(height: 2),
+                  AppText(
+                    _fmtDate(request.createdAt),
+                    fontSize: 10,
+                    color: AppColors.kGreyColor.withValues(alpha: 0.65),
+                    fontWeight: FontWeight.w400,
                   ),
                 ],
               ),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-
-  void _confirmAction(BuildContext context, String title, String content,
-      VoidCallback onConfirm) {
-    showDialog(
-      context: context,
-      builder: (dlgCtx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: AppText(title),
-        content: AppText(content, maxLines: 2, fontWeight: FontWeight.w400),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dlgCtx),
-            child: AppText('إلغاء', color: AppColors.kGreyColor),
+            ],
           ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(dlgCtx);
-              onConfirm();
-            },
-            child: AppText('تأكيد', color: AppColors.kPrimaryColor),
+        ),
+        if (!isLast)
+          Divider(
+            height: 1,
+            indent: 68,
+            endIndent: 16,
+            color: isDark
+                ? Colors.white.withValues(alpha: 0.05)
+                : Colors.black.withValues(alpha: 0.05),
           ),
-        ],
-      ),
-    );
-  }
-
-  String _formatAmount(double? amount) {
-    if (amount == null) return '—';
-    if (amount >= 1000000) {
-      return '${(amount / 1000000).toStringAsFixed(1)}م';
-    }
-    if (amount >= 1000) {
-      return '${(amount / 1000).toStringAsFixed(1)}ك';
-    }
-    return amount.toStringAsFixed(0);
-  }
-
-  String _formatDate(String? date) {
-    if (date == null) return '';
-    try {
-      final d = DateTime.parse(date);
-      return '${d.year}/${d.month.toString().padLeft(2, '0')}/${d.day.toString().padLeft(2, '0')}';
-    } catch (_) {
-      return date;
-    }
-  }
-}
-
-class _InfoChip extends StatelessWidget {
-  final String label;
-  final String value;
-  final TextAlign align;
-
-  const _InfoChip({
-    required this.label,
-    required this.value,
-    this.align = TextAlign.start,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: align == TextAlign.end
-          ? CrossAxisAlignment.end
-          : align == TextAlign.center
-              ? CrossAxisAlignment.center
-              : CrossAxisAlignment.start,
-      children: [
-        AppText(label, fontSize: 9, color: AppColors.kGreyColor,
-            fontWeight: FontWeight.w400, textAlign: align),
-        AppText(value, fontSize: 13, fontWeight: FontWeight.w700,
-            textAlign: align),
       ],
     );
   }
+
+  String _fmt(double? v) {
+    if (v == null) return '—';
+    if (v >= 1000000) return '${(v / 1000000).toStringAsFixed(2)}م';
+    if (v >= 1000) return '${(v / 1000).toStringAsFixed(1)}ك';
+    return v.toStringAsFixed(0);
+  }
+
+  String _fmtDate(String? d) {
+    if (d == null) return '';
+    try {
+      final dt = DateTime.parse(d);
+      return '${dt.day}/${dt.month}/${dt.year}';
+    } catch (_) {
+      return d;
+    }
+  }
 }
 
-class _ActionButton extends StatelessWidget {
-  final String label;
-  final IconData icon;
+class _CodeChip extends StatelessWidget {
+  final String code;
   final Color color;
-  final VoidCallback onTap;
 
-  const _ActionButton({
-    required this.label,
-    required this.icon,
-    required this.color,
-    required this.onTap,
-  });
+  const _CodeChip({required this.code, required this.color});
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(8),
-      child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 4),
-        padding: const EdgeInsets.symmetric(vertical: 8),
-        decoration: BoxDecoration(
-          color: color.withOpacity(0.08),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, color: color, size: 14),
-            const SizedBox(width: 4),
-            AppText(label, fontSize: 11, color: color,
-                fontWeight: FontWeight.w700),
-          ],
-        ),
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(5),
       ),
+      child: AppText(code,
+          fontSize: 10, color: color, fontWeight: FontWeight.w700),
     );
   }
 }
@@ -1816,11 +1583,11 @@ class _ActionButton extends StatelessWidget {
 // SHARED BOTTOM SHEET CONTAINER
 // ─────────────────────────────────────────────────────────────────────────────
 
-class _BottomSheetContainer extends StatelessWidget {
+class _BottomSheet extends StatelessWidget {
   final String title;
   final Widget child;
 
-  const _BottomSheetContainer({required this.title, required this.child});
+  const _BottomSheet({required this.title, required this.child});
 
   @override
   Widget build(BuildContext context) {
@@ -1835,7 +1602,7 @@ class _BottomSheetContainer extends StatelessWidget {
         left: 16,
         right: 16,
         top: 12,
-        bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+        bottom: MediaQuery.of(context).viewInsets.bottom + 28,
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -1844,39 +1611,16 @@ class _BottomSheetContainer extends StatelessWidget {
             width: 40,
             height: 4,
             decoration: BoxDecoration(
-              color: AppColors.kGreyColor.withOpacity(0.3),
+              color: AppColors.kGreyColor.withValues(alpha: 0.3),
               borderRadius: BorderRadius.circular(2),
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 18),
           AppText(title, fontSize: 16, fontWeight: FontWeight.w700),
           const SizedBox(height: 16),
           child,
         ],
       ),
-    );
-  }
-}
-
-class _OptionTile extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final Color color;
-  final VoidCallback onTap;
-
-  const _OptionTile({
-    required this.icon,
-    required this.label,
-    required this.color,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return ListTile(
-      leading: Icon(icon, color: color, size: 20),
-      title: AppText(label, fontSize: 14, color: color),
-      onTap: onTap,
     );
   }
 }

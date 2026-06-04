@@ -39,5 +39,5 @@ Future<void> initDI() async {
   getIt.registerFactory(() => ExchangeRatesCubit(getIt()));
   getIt.registerFactory(() => CurrenciesCubit(getIt()));
   getIt.registerFactory(() => ExchangeRequestsCubit(getIt()));
-  getIt.registerFactory(() => NotificationsCubit());
+  getIt.registerLazySingleton(() => NotificationsCubit());
 }

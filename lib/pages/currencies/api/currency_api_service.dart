@@ -18,7 +18,7 @@ class CurrenciesApiService {
       ApiConstants.currencies,
       data: request.toJson(),
     );
-    return _parseSingle(response.data, CurrencyModel.fromJson);
+    return _parseOne(response.data, CurrencyModel.fromJson);
   }
 
   Future<CurrencyModel> updateCurrency(
@@ -29,7 +29,7 @@ class CurrenciesApiService {
       '${ApiConstants.currencies}/$id',
       data: request.toJson(),
     );
-    return _parseSingle(response.data, CurrencyModel.fromJson);
+    return _parseOne(response.data, CurrencyModel.fromJson);
   }
 
   Future<void> deleteCurrency(String id) async {
@@ -58,14 +58,15 @@ class CurrenciesApiService {
     return [];
   }
 
-  static T _parseSingle<T>(
+  static T _parseOne<T>(
     dynamic data,
     T Function(Map<String, dynamic>) fromJson,
   ) {
     if (data is Map<String, dynamic>) {
       if (data['succeeded'] == false) {
         throw Exception(
-          (data['error'] as Map<String, dynamic>?)?['message'] ?? 'حدث خطأ',
+          (data['error'] as Map<String, dynamic>?)?['message'] ??
+              'فشل في العملية',
         );
       }
       final item = data['data'] ?? data;

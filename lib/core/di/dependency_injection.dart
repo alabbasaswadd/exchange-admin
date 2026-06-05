@@ -2,7 +2,7 @@ import 'package:exchange_admin/pages/auth/signin/api/signin_api.dart';
 import 'package:exchange_admin/pages/auth/signin/api/signin_api_service.dart';
 import 'package:exchange_admin/pages/auth/signin/cubit/signin_cubit.dart';
 import 'package:exchange_admin/pages/currencies/api/currencies_api.dart';
-import 'package:exchange_admin/pages/currencies/api/currencies_api_service.dart';
+import 'package:exchange_admin/pages/currencies/api/currency_api_service.dart';
 import 'package:exchange_admin/pages/currencies/cubit/currencies_cubit.dart';
 import 'package:exchange_admin/pages/exchange_rates/api/exchange_rates_api.dart';
 import 'package:exchange_admin/pages/exchange_rates/api/exchange_rates_api_service.dart';

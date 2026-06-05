@@ -7,16 +7,11 @@ part of 'signin_model.dart';
 // **************************************************************************
 
 SigninModel _$SigninModelFromJson(Map<String, dynamic> json) => SigninModel(
-  id: json['id'] as String?,
   token: json['token'] as String?,
-  email: json['email'] as String?,
-  password: json['password'] as String?,
+  user: json['user'] == null
+      ? null
+      : UserModel.fromJson(json['user'] as Map<String, dynamic>),
 );
 
 Map<String, dynamic> _$SigninModelToJson(SigninModel instance) =>
-    <String, dynamic>{
-      'id': instance.id,
-      'token': instance.token,
-      'email': instance.email,
-      'password': instance.password,
-    };
+    <String, dynamic>{'token': instance.token, 'user': instance.user};

@@ -1,15 +1,14 @@
+import 'package:exchange_admin/pages/auth/signin/model/user_model.dart';
 import 'package:json_annotation/json_annotation.dart';
 
 part 'signin_model.g.dart';
 
 @JsonSerializable()
 class SigninModel {
-  final String? id;
   final String? token;
-  final String? email;
-  final String? password;
+  final UserModel? user;
 
-  SigninModel({this.id, this.token, this.email, this.password});
+  SigninModel({this.token, this.user});
 
   factory SigninModel.fromJson(Map<String, dynamic> json) {
     return _$SigninModelFromJson(json);

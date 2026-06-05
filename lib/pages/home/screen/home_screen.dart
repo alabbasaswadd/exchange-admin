@@ -209,8 +209,8 @@ class _MainCard extends StatefulWidget {
 }
 
 class _MainCardState extends State<_MainCard> {
-  String _fromCode = 'USD';
-  String _toCode = 'SYP';
+  String _fromCode = '';
+  String _toCode = '';
 
   @override
   Widget build(BuildContext context) {
@@ -337,10 +337,15 @@ class _MainCardState extends State<_MainCard> {
   // ── Rate section (header + dropdowns + rate display in one block) ─────────
 
   Widget _buildRateSection(BuildContext context) {
-    return BlocBuilder<ExchangeRatesCubit, SigninState<List<ExchangeRateModel>>>(
+    return BlocBuilder<
+      ExchangeRatesCubit,
+      SigninState<List<ExchangeRateModel>>
+    >(
       builder: (context, rateState) {
-        final isLoading =
-            rateState.maybeWhen(loading: () => true, orElse: () => false);
+        final isLoading = rateState.maybeWhen(
+          loading: () => true,
+          orElse: () => false,
+        );
         final rates = rateState.maybeWhen(
           success: (r) => r,
           orElse: () => <ExchangeRateModel>[],
@@ -354,12 +359,13 @@ class _MainCardState extends State<_MainCard> {
           }
         }
 
-        final spread =
-            rate != null ? (rate.sellRate ?? 0) - (rate.buyRate ?? 0) : 0.0;
+        final spread = rate != null
+            ? (rate.sellRate ?? 0) - (rate.buyRate ?? 0)
+            : 0.0;
         final spreadPct =
             rate != null && rate.buyRate != null && rate.buyRate! > 0
-                ? (spread / rate.buyRate!) * 100
-                : 0.0;
+            ? (spread / rate.buyRate!) * 100
+            : 0.0;
 
         return Container(
           decoration: BoxDecoration(
@@ -423,10 +429,14 @@ class _MainCardState extends State<_MainCard> {
                           color: Colors.white.withValues(alpha: 0.14),
                           borderRadius: BorderRadius.circular(8),
                           border: Border.all(
-                              color: Colors.white.withValues(alpha: 0.2)),
+                            color: Colors.white.withValues(alpha: 0.2),
+                          ),
                         ),
-                        child: const Icon(Icons.edit_outlined,
-                            color: Colors.white, size: 14),
+                        child: const Icon(
+                          Icons.edit_outlined,
+                          color: Colors.white,
+                          size: 14,
+                        ),
                       ),
                     ),
                   ],
@@ -440,6 +450,18 @@ class _MainCardState extends State<_MainCard> {
                     success: (c) => c,
                     orElse: () => <CurrencyModel>[],
                   );
+                  if (_fromCode.isEmpty && currencies.isNotEmpty) {
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      if (mounted) {
+                        setState(() {
+                          _fromCode = currencies[0].code ?? '';
+                          _toCode = currencies.length > 1
+                              ? (currencies[1].code ?? '')
+                              : _fromCode;
+                        });
+                      }
+                    });
+                  }
                   return Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -525,17 +547,23 @@ class _MainCardState extends State<_MainCard> {
                 const SizedBox(height: 10),
                 Container(
                   padding: const EdgeInsets.symmetric(
-                      horizontal: 14, vertical: 10),
+                    horizontal: 14,
+                    vertical: 10,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.white.withValues(alpha: 0.08),
                     borderRadius: BorderRadius.circular(10),
                     border: Border.all(
-                        color: Colors.white.withValues(alpha: 0.14)),
+                      color: Colors.white.withValues(alpha: 0.14),
+                    ),
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.info_outline_rounded,
-                          color: Colors.white70, size: 16),
+                      const Icon(
+                        Icons.info_outline_rounded,
+                        color: Colors.white70,
+                        size: 16,
+                      ),
                       const SizedBox(width: 8),
                       Expanded(
                         child: AppText(
@@ -556,6 +584,7 @@ class _MainCardState extends State<_MainCard> {
       },
     );
   }
+
   String _fmtRate(double? v) {
     if (v == null) return '—';
     return v >= 100 ? v.toStringAsFixed(0) : v.toStringAsFixed(2);
@@ -742,7 +771,8 @@ class _CurrencyDropdownButton extends StatelessWidget {
     this.isLoadingRate = false,
   });
 
-  String _fmt(double v) => v >= 100 ? v.toStringAsFixed(0) : v.toStringAsFixed(2);
+  String _fmt(double v) =>
+      v >= 100 ? v.toStringAsFixed(0) : v.toStringAsFixed(2);
 
   @override
   Widget build(BuildContext context) {

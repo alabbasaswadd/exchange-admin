@@ -19,7 +19,7 @@ class DioFactory {
           receiveTimeout: timeOut,
           headers: {
             'Authorization':
-                'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1laWQiOiJhNDRhN2RjYS04YzY0LTRjY2ItYmZmNS1mZjE4ODNkM2VlYTYiLCJqdGkiOiI4YzAwYjVmMi1kNzkzLTQyYWEtYWUwNi1jYTVkOGE1ODMzZGYiLCJuYmYiOjE3ODA2MDg0NzYsImV4cCI6MTc4NTc5MjQ3NiwiaWF0IjoxNzgwNjA4NDc2LCJpc3MiOiJDdXJyZW5jeUV4Y2hhbmdlVXNlckFwaSIsImF1ZCI6IkN1cnJlbmN5RXhjaGFuZ2VVc2VyQ2xpZW50cyJ9.Fjmk77zF_MDZCiB7qfReOfWMBBMJu3tBFcM3_HkmC1Q',
+                'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1laWQiOiJmMDU4MmUyOC1lNjJjLTRmN2YtOWYyYS1hYmI1NTIyOTY4NjYiLCJqdGkiOiJjY2UyMjI5NS1hNjNhLTQ2ZDAtYjk5Mi04ZTRiYTg0MTVjMjciLCJuYmYiOjE3ODA2NTczNjcsImV4cCI6MTc4NTg0MTM2NywiaWF0IjoxNzgwNjU3MzY3LCJpc3MiOiJDdXJyZW5jeUV4Y2hhbmdlQXBpIiwiYXVkIjoiQ3VycmVuY3lFeGNoYW5nZUNsaWVudHMifQ.x5zaP0ALeLaG89OuljFSM1byq9k90mLX1qChnUSjIyY',
           },
         ),
       );

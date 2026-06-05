@@ -1,4 +1,7 @@
 import 'package:exchange_admin/core/constants/base_cubit.dart';
+import 'package:exchange_admin/core/constants/cached/cached_helper.dart';
+import 'package:exchange_admin/core/constants/functions.dart';
+import 'package:exchange_admin/core/networking/dio_factory.dart';
 import 'package:exchange_admin/pages/auth/signin/cubit/signin_state.dart';
 import 'package:flutter/material.dart';
 
@@ -28,10 +31,10 @@ class SigninCubit extends BaseCubit<SigninState> {
 
       onSuccess: (response) async {
         if (response.succeeded == true && response.data != null) {
-          // final token = response.data!.token;
-          // UserSession.saveUser(response.data!);
-          // await CacheHelper.setString('token', token);
-          // DioFactory.setTokenIntoHeaderAfterLogin(token);
+          final token = response.data!.token;
+          await UserSession.updateSession(response);
+          await CacheHelper.setString('token', token ?? "");
+          DioFactory.setTokenIntoHeaderAfterLogin(token ?? "");
           emit(SigninState.success(response));
         } else {
           emit(

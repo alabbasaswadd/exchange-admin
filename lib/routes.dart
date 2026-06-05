@@ -9,6 +9,8 @@ import 'package:exchange_admin/pages/home/screen/history_screen.dart';
 import 'package:exchange_admin/pages/home/screen/home_screen.dart';
 import 'package:exchange_admin/pages/notifications/cubit/notifications_cubit.dart';
 import 'package:exchange_admin/pages/notifications/screen/notifications_screen.dart';
+import 'package:exchange_admin/pages/startup/cubit/startup_cubit.dart';
+import 'package:exchange_admin/pages/startup/screen/startup_screen.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
@@ -24,6 +26,13 @@ final GoRouter router = GoRouter(
   },
   routes: [
     GoRoute(
+      path: '/',
+      builder: (context, state) => BlocProvider(
+        create: (_) => getIt<StartupCubit>(),
+        child: const StartupScreen(),
+      ),
+    ),
+    GoRoute(
       path: '/signin',
       builder: (context, state) => BlocProvider(
         create: (_) => getIt<SigninCubit>(),
@@ -31,7 +40,7 @@ final GoRouter router = GoRouter(
       ),
     ),
     GoRoute(
-      path: '/',
+      path: '/home',
       builder: (context, state) => MultiBlocProvider(
         providers: [
           BlocProvider(

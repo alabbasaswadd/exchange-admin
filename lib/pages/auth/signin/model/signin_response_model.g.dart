@@ -11,7 +11,7 @@ SigninResponseModel _$SigninResponseModelFromJson(Map<String, dynamic> json) =>
       succeeded: json['succeeded'] as bool?,
       data: json['data'] == null
           ? null
-          : AccountModel.fromJson(json['data'] as Map<String, dynamic>),
+          : SigninModel.fromJson(json['data'] as Map<String, dynamic>),
       error: json['error'] == null
           ? null
           : ErrorModel.fromJson(json['error'] as Map<String, dynamic>),

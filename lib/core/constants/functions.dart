@@ -1,97 +1,114 @@
-// import 'dart:convert';
-// import 'dart:io';
-// import 'dart:typed_data';
-// import 'dart:ui' as ui;
-// import 'package:flutter/material.dart';
-// import 'package:flutter/rendering.dart';
-// import 'package:path_provider/path_provider.dart';
-// import 'package:share_plus/share_plus.dart';
-// import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
+import 'package:exchange_admin/pages/auth/signin/model/signin_model.dart';
+import 'package:exchange_admin/pages/auth/signin/model/signin_response_model.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:exchange_admin/pages/auth/signin/model/user_model.dart';
 
-// class UserPreferencesService {
-//   static const String _userKey = 'user_data';
-//   static Future<void> saveUser(Map<String, dynamic> userJson) async {
-//     final prefs = await SharedPreferences.getInstance();
-//     await prefs.setString(_userKey, jsonEncode(userJson));
-//   }
+class UserPreferencesService {
+  static const String _signinKey = 'signin_data';
 
-//   static Future<AccountDataModel?> getUserModel() async {
-//     final prefs = await SharedPreferences.getInstance();
-//     final userString = prefs.getString(_userKey);
-//     if (userString != null) {
-//       final json = jsonDecode(userString);
-//       return AccountDataModel.fromJson(json);
-//     }
-//     return null;
-//   }
+  /// حفظ بيانات تسجيل الدخول كاملة
+  static Future<void> saveSigninData(SigninModel signinModel) async {
+    final prefs = await SharedPreferences.getInstance();
 
-//   static Future<void> clearUser() async {
-//     final prefs = await SharedPreferences.getInstance();
-//     await prefs.remove("token");
-//     await prefs.remove(_userKey);
-//   }
+    await prefs.setString(_signinKey, jsonEncode(signinModel.toJson()));
+  }
 
-//   static Future<void> saveToken(String token) async {
-//     final prefs = await SharedPreferences.getInstance();
-//     await prefs.setString("token", token);
-//   }
+  /// جلب بيانات تسجيل الدخول
+  static Future<SigninModel?> getSigninData() async {
+    final prefs = await SharedPreferences.getInstance();
 
-//   static Future<String?> getToken() async {
-//     final prefs = await SharedPreferences.getInstance();
-//     final token = prefs.getString("token");
-//     if (token != null) {
-//       return token;
-//     }
-//     return null;
-//   }
+    final data = prefs.getString(_signinKey);
 
-//   static Future<bool> isLoggedIn() async {
-//     final prefs = await SharedPreferences.getInstance();
-//     return prefs.containsKey("token");
-//   }
-// }
+    if (data == null) return null;
 
-// class UserSession {
-//   static AccountDataModel? _user;
+    return SigninModel.fromJson(jsonDecode(data) as Map<String, dynamic>);
+  }
 
-//   /// تحميل بيانات المستخدم من SharedPreferences
-//   static Future<void> init() async {
-//     _user = await UserPreferencesService.getUserModel();
-//   }
+  /// حذف البيانات
+  static Future<void> clear() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_signinKey);
+  }
 
-//   /// بيانات المستخدم
-//   static AccountDataModel? get user => _user;
+  /// جلب التوكن
+  static Future<String?> getToken() async {
+    final signinData = await getSigninData();
+    return signinData?.token;
+  }
 
-//   /// خصائص مختصرة
-//   static String? get id => _user?.id;
-//   static String? get email => _user?.email;
-//   static String? get phone => _user?.phone?.toString();
-//   static String? get firstName => _user?.firstName;
-//   static String? get lastName => _user?.lastName;
-//   static String? get userName => _user?.userName;
-//   static String? get image => _user?.image;
-//   static DateTime? get dateOfBirth => _user?.dateOfBirth;
+  /// التحقق من تسجيل الدخول
+  static Future<bool> isLoggedIn() async {
+    final token = await getToken();
+    return token != null && token.isNotEmpty;
+  }
+}
 
-//   /// العنوان
-//   static AddressModel? get address => _user?.address;
-//   static String? get city => _user?.address?.city;
-//   static String? get street => _user?.address?.street;
-//   static int? get buildingNumber => _user?.address?.buildingNumber;
-//   static String? get postalCode => _user?.address?.postalCode;
-//   static String? get country => _user?.address?.country;
+class UserSession {
+  static SigninModel? _signinModel;
 
-//   /// هل مسجل دخول
-//   static bool get isLoggedIn => _user != null;
+  /// تحميل الجلسة
+  static Future<void> init() async {
+    _signinModel = await UserPreferencesService.getSigninData();
+  }
 
-//   /// تحديث
-//   static Future<void> updateUser(AccountDataModel userModel) async {
-//     _user = userModel;
-//     await UserPreferencesService.saveUser(userModel.toJson());
-//   }
+  /// البيانات الكاملة
+  static SigninModel? get signinModel => _signinModel;
 
-//   /// تسجيل الخروج
-//   static Future<void> clear() async {
-//     _user = null;
-//     await UserPreferencesService.clearUser();
-//   }
-// }
+  /// المستخدم
+  static UserModel? get user => _signinModel?.user;
+
+  /// التوكن
+  static String? get token => _signinModel?.token;
+
+  /// خصائص مختصرة
+  static String? get id => user?.id;
+  static String? get fullName => user?.fullName;
+  static String? get email => user?.email;
+  static String? get phone => user?.phoneNumber;
+  static int? get role => user?.role;
+  static bool get isActive => user?.isActive ?? false;
+  static String? get createdOn => user?.createdOn;
+
+  /// الاسم الأول
+  static String? get firstName {
+    if (user?.fullName == null) return null;
+
+    final names = user!.fullName!.split(' ');
+    return names.isNotEmpty ? names.first : null;
+  }
+
+  /// الاسم الأخير
+  static String? get lastName {
+    if (user?.fullName == null) return null;
+
+    final names = user!.fullName!.split(' ');
+    return names.length > 1 ? names.last : null;
+  }
+
+  /// هل يوجد جلسة
+  static bool get isLoggedIn =>
+      _signinModel?.token != null && _signinModel!.token!.isNotEmpty;
+
+  /// تحديث الجلسة كاملة
+  static Future<void> updateSession(SigninResponseModel signinModel) async {
+    _signinModel = signinModel.data;
+
+    await UserPreferencesService.saveSigninData(signinModel.data!);
+  }
+
+  /// تحديث المستخدم فقط
+  static Future<void> updateUser(UserModel userModel) async {
+    if (_signinModel == null) return;
+
+    _signinModel = SigninModel(token: _signinModel!.token, user: userModel);
+
+    await UserPreferencesService.saveSigninData(_signinModel!);
+  }
+
+  /// تسجيل الخروج
+  static Future<void> clear() async {
+    _signinModel = null;
+    await UserPreferencesService.clear();
+  }
+}

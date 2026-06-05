@@ -3,7 +3,7 @@ class ApiConstants {
       "https://shamcash.runasp.net/currency-exchange-api/api/";
 
   // Auth
-  static const String signin = "User/Auth/login";
+  static const String signin = "v1/Auth/login";
 
   // Exchange Rates
   static const String exchangeRates = "v1/ExchangeRate";

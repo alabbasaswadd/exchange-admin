@@ -54,4 +54,11 @@ class SigninCubit extends BaseCubit<SigninState> {
 
     return super.close();
   }
+
+  Future<void> logout() async {
+    await UserSession.clear();
+    await CacheHelper.remove('token');
+    DioFactory.setTokenIntoHeaderAfterLogin('');
+    emit(const SigninState.initial());
+  }
 }

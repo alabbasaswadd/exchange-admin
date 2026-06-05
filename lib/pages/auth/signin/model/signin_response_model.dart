@@ -1,6 +1,5 @@
 import 'package:exchange_admin/core/constants/model/error_model.dart';
 import 'package:exchange_admin/pages/auth/signin/model/signin_model.dart';
-import 'package:exchange_admin/pages/auth/signin/model/user_model.dart';
 import 'package:json_annotation/json_annotation.dart';
 
 part 'signin_response_model.g.dart';

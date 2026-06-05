@@ -9,21 +9,47 @@ class CurrenciesApi extends BaseApi {
 
   CurrenciesApi(this._service);
 
-  Future<ApiResult<List<CurrencyModel>>> getCurrencies() =>
-      execute(request: () => _service.getCurrencies());
+  Future<ApiResult<List<CurrencyModel>>> getCurrencies() => execute(
+    request: () async {
+      final res = await _service.getCurrencies();
+      if (res.succeeded == true && res.data != null) {
+        return res.data!.whereType<CurrencyModel>().toList();
+      }
+      throw Exception(res.error?.message ?? 'فشل جلب العملات');
+    },
+  );
 
   Future<ApiResult<CurrencyModel>> addCurrency(CurrencyRequestModel request) =>
-      execute(request: () => _service.addCurrency(request));
+      execute(
+        request: () async {
+          final res = await _service.addCurrency(request);
+          if (res.succeeded == true &&
+              res.data != null &&
+              res.data!.isNotEmpty) {
+            return res.data!.first!;
+          }
+          throw Exception(res.error?.message ?? 'فشل إضافة العملة');
+        },
+      );
 
   Future<ApiResult<CurrencyModel>> updateCurrency(
     String id,
     CurrencyRequestModel request,
-  ) => execute(request: () => _service.updateCurrency(id, request));
+  ) => execute(
+    request: () async {
+      final res = await _service.updateCurrency(id, request);
+      if (res.succeeded == true && res.data != null && res.data!.isNotEmpty) {
+        return res.data!.first!;
+      }
+      throw Exception(res.error?.message ?? 'فشل تحديث العملة');
+    },
+  );
 
   Future<ApiResult<bool>> deleteCurrency(String id) => execute(
     request: () async {
-      await _service.deleteCurrency(id);
-      return true;
+      final res = await _service.deleteCurrency(id);
+      if (res.succeeded == true) return true;
+      throw Exception(res.error?.message ?? 'فشل حذف العملة');
     },
   );
 }

@@ -1,51 +1,42 @@
 import 'package:dio/dio.dart';
-// import 'package:flutter/material.dart';
+import 'package:exchange_admin/core/networking/api_constans.dart';
 import 'package:pretty_dio_logger/pretty_dio_logger.dart';
-
-import 'api_constans.dart';
 
 class DioFactory {
   DioFactory._();
 
-  static Dio? dio;
+  static Dio? _dio;
+  static String _token = '';
 
   static Dio getDio() {
-    if (dio == null) {
+    if (_dio == null) {
       const timeOut = Duration(seconds: 30);
-      dio = Dio(
+      _dio = Dio(
         BaseOptions(
           baseUrl: ApiConstants.apiBaseUrl,
           connectTimeout: timeOut,
           receiveTimeout: timeOut,
           headers: {
-            'Authorization':
-                'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1laWQiOiJmMDU4MmUyOC1lNjJjLTRmN2YtOWYyYS1hYmI1NTIyOTY4NjYiLCJqdGkiOiJjY2UyMjI5NS1hNjNhLTQ2ZDAtYjk5Mi04ZTRiYTg0MTVjMjciLCJuYmYiOjE3ODA2NTczNjcsImV4cCI6MTc4NTg0MTM2NywiaWF0IjoxNzgwNjU3MzY3LCJpc3MiOiJDdXJyZW5jeUV4Y2hhbmdlQXBpIiwiYXVkIjoiQ3VycmVuY3lFeGNoYW5nZUNsaWVudHMifQ.x5zaP0ALeLaG89OuljFSM1byq9k90mLX1qChnUSjIyY',
+            if (_token.isNotEmpty) 'Authorization': 'Bearer $_token',
           },
         ),
       );
-      addDioInterceptor();
+      _addInterceptor();
     }
-    return dio!;
+    return _dio!;
   }
-
-  // static void addDioHeaders() async {
-  //   dio?.options.headers = {
-  //     'Accept': 'application/json',
-  //     'Authorization':
-  //         'Bearer ${await SharedPrefHelper.getSecuredString(SharedPrefKeys.userToken)}',
-  //   };
-  // }
 
   static void setTokenIntoHeaderAfterLogin(String token) {
-    dio?.options.headers = {
-      // 'X-Tenant-Id':
-      //     UserSession.user?.subscriptions.first.id ?? ApiConstants.tenantId,
-      // 'Authorization': 'Bearer ${UserSession.user?.token ?? token}',
-    };
+    _token = token;
+    if (token.isEmpty) {
+      _dio?.options.headers.remove('Authorization');
+    } else {
+      _dio?.options.headers['Authorization'] = 'Bearer $token';
+    }
   }
 
-  static void addDioInterceptor() {
-    dio?.interceptors.add(
+  static void _addInterceptor() {
+    _dio?.interceptors.add(
       PrettyDioLogger(
         requestBody: true,
         requestHeader: true,

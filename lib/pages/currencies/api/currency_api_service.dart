@@ -1,77 +1,30 @@
 import 'package:dio/dio.dart';
 import 'package:exchange_admin/core/networking/api_constans.dart';
-import 'package:exchange_admin/pages/currencies/model/currency_model.dart';
 import 'package:exchange_admin/pages/currencies/model/currency_request_model.dart';
+import 'package:exchange_admin/pages/currencies/model/currency_response_model.dart';
+import 'package:retrofit/retrofit.dart';
 
-class CurrenciesApiService {
-  final Dio _dio;
+part 'currency_api_service.g.dart';
 
-  CurrenciesApiService(this._dio);
+@RestApi(baseUrl: ApiConstants.apiBaseUrl)
+abstract class CurrenciesApiService {
+  factory CurrenciesApiService(Dio dio, {String baseUrl}) =
+      _CurrenciesApiService;
 
-  Future<List<CurrencyModel>> getCurrencies() async {
-    final response = await _dio.get(ApiConstants.currencies);
-    return _parseList(response.data, CurrencyModel.fromJson);
-  }
+  @GET(ApiConstants.currencies)
+  Future<CurrencyResponseModel> getCurrencies();
 
-  Future<CurrencyModel> addCurrency(CurrencyRequestModel request) async {
-    final response = await _dio.post(
-      ApiConstants.currencies,
-      data: request.toJson(),
-    );
-    return _parseOne(response.data, CurrencyModel.fromJson);
-  }
+  @POST(ApiConstants.currencies)
+  Future<CurrencyResponseModel> addCurrency(
+    @Body() CurrencyRequestModel request,
+  );
 
-  Future<CurrencyModel> updateCurrency(
-    String id,
-    CurrencyRequestModel request,
-  ) async {
-    final response = await _dio.put(
-      '${ApiConstants.currencies}/$id',
-      data: request.toJson(),
-    );
-    return _parseOne(response.data, CurrencyModel.fromJson);
-  }
+  @PUT('${ApiConstants.currencies}/{id}')
+  Future<CurrencyResponseModel> updateCurrency(
+    @Path('id') String id,
+    @Body() CurrencyRequestModel request,
+  );
 
-  Future<void> deleteCurrency(String id) async {
-    await _dio.delete('${ApiConstants.currencies}/$id');
-  }
-
-  static List<T> _parseList<T>(
-    dynamic data,
-    T Function(Map<String, dynamic>) fromJson,
-  ) {
-    if (data is List) {
-      return data.map((e) => fromJson(e as Map<String, dynamic>)).toList();
-    }
-    if (data is Map<String, dynamic>) {
-      if (data['succeeded'] == false) {
-        throw Exception(
-          (data['error'] as Map<String, dynamic>?)?['message'] ??
-              'فشل تحميل البيانات',
-        );
-      }
-      final list = data['data'];
-      if (list is List) {
-        return list.map((e) => fromJson(e as Map<String, dynamic>)).toList();
-      }
-    }
-    return [];
-  }
-
-  static T _parseOne<T>(
-    dynamic data,
-    T Function(Map<String, dynamic>) fromJson,
-  ) {
-    if (data is Map<String, dynamic>) {
-      if (data['succeeded'] == false) {
-        throw Exception(
-          (data['error'] as Map<String, dynamic>?)?['message'] ??
-              'فشل في العملية',
-        );
-      }
-      final item = data['data'] ?? data;
-      return fromJson(item as Map<String, dynamic>);
-    }
-    return fromJson(data as Map<String, dynamic>);
-  }
+  @DELETE('${ApiConstants.currencies}/{id}')
+  Future<CurrencyResponseModel> deleteCurrency(@Path('id') String id);
 }

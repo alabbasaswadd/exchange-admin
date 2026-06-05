@@ -1,13 +1,21 @@
-import 'package:flutter/material.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:exchange_admin/core/constants/cached/cached_helper.dart';
+import 'package:exchange_admin/core/constants/functions.dart';
+import 'package:exchange_admin/core/networking/dio_factory.dart';
 import 'package:exchange_admin/core/di/dependency_injection.dart';
 import 'package:exchange_admin/l10n/app_localizations.dart';
 import 'package:exchange_admin/routes.dart';
 import 'package:exchange_admin/theme.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 
-void main() {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  initDI();
+  await initDI();
+  await UserSession.init();
+  final token = await CacheHelper.getString('token');
+  if (token.isNotEmpty) {
+    DioFactory.setTokenIntoHeaderAfterLogin(token);
+  }
   runApp(const MyApp());
 }
 

@@ -32,7 +32,7 @@ class _SigninApiService implements SigninApiService {
       Options(method: 'POST', headers: _headers, extra: _extra)
           .compose(
             _dio.options,
-            'User/Auth/login',
+            'v1/Auth/login',
             queryParameters: queryParameters,
             data: _data,
           )

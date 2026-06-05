@@ -5,7 +5,7 @@ import 'package:exchange_admin/pages/auth/signin/screen/signin_screen.dart';
 import 'package:exchange_admin/pages/currencies/cubit/currencies_cubit.dart';
 import 'package:exchange_admin/pages/exchange_rates/cubit/exchange_rates_cubit.dart';
 import 'package:exchange_admin/pages/exchange_requests/cubit/exchange_requests_cubit.dart';
-import 'package:exchange_admin/pages/home/screen/history_screen.dart';
+import 'package:exchange_admin/pages/exchange_requests/screen/exchange_requests_screen.dart';
 import 'package:exchange_admin/pages/home/screen/home_screen.dart';
 import 'package:exchange_admin/pages/notifications/cubit/notifications_cubit.dart';
 import 'package:exchange_admin/pages/notifications/screen/notifications_screen.dart';
@@ -46,6 +46,7 @@ final GoRouter router = GoRouter(
           BlocProvider(
             create: (_) => getIt<ExchangeRatesCubit>()..fetchRates(),
           ),
+          BlocProvider(create: (_) => getIt<SigninCubit>()),
           BlocProvider(
             create: (_) => getIt<CurrenciesCubit>()..fetchCurrencies(),
           ),
@@ -58,17 +59,17 @@ final GoRouter router = GoRouter(
       ),
     ),
     GoRoute(
+      path: '/history',
+      builder: (context, state) => BlocProvider(
+        create: (_) => getIt<ExchangeRequestsCubit>(),
+        child: const ExchangeRequestsScreen(),
+      ),
+    ),
+    GoRoute(
       path: '/notifications',
       builder: (context, state) => BlocProvider.value(
         value: getIt<NotificationsCubit>(),
         child: const NotificationsScreen(),
-      ),
-    ),
-    GoRoute(
-      path: '/history',
-      builder: (context, state) => BlocProvider(
-        create: (_) => getIt<ExchangeRequestsCubit>()..fetchRequests(),
-        child: const HistoryScreen(),
       ),
     ),
   ],

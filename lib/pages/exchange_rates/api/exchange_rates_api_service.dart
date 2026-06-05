@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:exchange_admin/core/networking/api_constans.dart';
 import 'package:exchange_admin/pages/exchange_rates/model/exchange_rate_model.dart';
+import 'package:exchange_admin/pages/exchange_rates/model/exchange_rate_request_model.dart';
 
 class ExchangeRatesApiService {
   final Dio _dio;
@@ -14,12 +15,11 @@ class ExchangeRatesApiService {
 
   Future<void> updateExchangeRate(
     String id,
-    double buyRate,
-    double sellRate,
+    ExchangeRateRequestModel request,
   ) async {
     await _dio.put(
       '${ApiConstants.exchangeRateUpdate}/$id',
-      data: {'buyRate': buyRate, 'sellRate': sellRate},
+      data: request.toJson(),
     );
   }
 
@@ -28,9 +28,7 @@ class ExchangeRatesApiService {
     T Function(Map<String, dynamic>) fromJson,
   ) {
     if (data is List) {
-      return data
-          .map((e) => fromJson(e as Map<String, dynamic>))
-          .toList();
+      return data.map((e) => fromJson(e as Map<String, dynamic>)).toList();
     }
     if (data is Map<String, dynamic>) {
       if (data['succeeded'] == false) {

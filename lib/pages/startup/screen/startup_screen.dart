@@ -121,11 +121,11 @@ class _StartupScreenState extends State<StartupScreen>
 
   @override
   Widget build(BuildContext context) {
-    return BlocListener<StartupCubit, StartupState>(
+    return BlocListener<StartupCubit, StartupState<StartupDestination>>(
       listener: (context, state) {
         state.whenOrNull(
           success: (destination) {
-            switch (destination as StartupDestination) {
+            switch (destination) {
               case StartupDestination.home:
                 context.go('/home');
               case StartupDestination.signin:

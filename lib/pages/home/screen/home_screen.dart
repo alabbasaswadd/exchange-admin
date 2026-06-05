@@ -1,11 +1,13 @@
 ﻿import 'dart:math' show min;
 
+import 'package:exchange_admin/core/components/app_alert_dialog.dart';
 import 'package:exchange_admin/core/components/app_button.dart';
 import 'package:exchange_admin/core/components/app_snackbar.dart';
 import 'package:exchange_admin/core/components/app_text.dart';
 import 'package:exchange_admin/core/components/app_text_form_field.dart';
-import 'package:exchange_admin/core/constants/cached/cached_helper.dart';
 import 'package:exchange_admin/core/constants/colors.dart';
+import 'package:exchange_admin/core/constants/functions.dart';
+import 'package:exchange_admin/pages/auth/signin/cubit/signin_cubit.dart';
 import 'package:exchange_admin/pages/auth/signin/cubit/signin_state.dart';
 import 'package:exchange_admin/pages/currencies/cubit/currencies_cubit.dart';
 import 'package:exchange_admin/pages/currencies/model/currency_model.dart';
@@ -141,60 +143,27 @@ class HomeScreen extends StatelessWidget {
             );
           },
         ),
-        PopupMenuButton<String>(
-          icon: const Icon(Icons.more_vert_rounded, color: Colors.white),
-          onSelected: (v) {
-            if (v == 'logout') _confirmLogout(context);
-          },
-          itemBuilder: (_) => [
-            PopupMenuItem(
-              value: 'logout',
-              child: Row(
-                children: const [
-                  Icon(
-                    Icons.logout_rounded,
-                    color: AppColors.kRedColor,
-                    size: 20,
-                  ),
-                  SizedBox(width: 8),
-                  AppText('تسجيل الخروج', color: AppColors.kRedColor),
-                ],
+        IconButton(
+          onPressed: () {
+            showDialog(
+              context: context,
+              builder: (contextt) => AppAlertDialog(
+                onOk: () {
+                  context.read<SigninCubit>().logout();
+                  contextt.go('/signin');
+                },
+                onNo: contextt.pop,
+                title: "تسجيل الخروج",
+                content: "هل تريد تسجبل الخروج ؟",
               ),
-            ),
-          ],
+            );
+          },
+          icon: const Icon(Icons.logout_rounded),
         ),
       ],
     );
   }
 
-  void _confirmLogout(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (dlg) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const AppText('تسجيل الخروج'),
-        content: const AppText(
-          'هل أنت متأكد أنك تريد تسجيل الخروج؟',
-          maxLines: 2,
-          fontWeight: FontWeight.w400,
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dlg),
-            child: const AppText('إلغاء', color: AppColors.kGreyColor),
-          ),
-          TextButton(
-            onPressed: () async {
-              Navigator.pop(dlg);
-              await CacheHelper.remove('token');
-              if (context.mounted) context.go('/signin');
-            },
-            child: const AppText('خروج', color: AppColors.kRedColor),
-          ),
-        ],
-      ),
-    );
-  }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -291,8 +260,8 @@ class _MainCardState extends State<_MainCard> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const AppText(
-                'مرحباً، المدير',
+              AppText(
+                'مرحباً ${UserSession.fullName}',
                 fontSize: 22,
                 color: Colors.white,
                 fontWeight: FontWeight.w700,
@@ -351,9 +320,31 @@ class _MainCardState extends State<_MainCard> {
           orElse: () => <ExchangeRateModel>[],
         );
 
+        // Build code→id map from the currencies already loaded
+        final currencies = context.read<CurrenciesCubit>().state.maybeWhen(
+          success: (c) => c,
+          orElse: () => <CurrencyModel>[],
+        );
+        final codeToId = {
+          for (final c in currencies)
+            if (c.code != null && c.id != null) c.code!: c.id!,
+        };
+        final fromId = codeToId[_fromCode];
+        final toId = codeToId[_toCode];
+
         ExchangeRateModel? rate;
         for (final r in rates) {
-          if (r.fromCurrencyCode == _fromCode && r.toCurrencyCode == _toCode) {
+          // Primary: match by currency ID (works even when nested objects are null)
+          final byId =
+              fromId != null &&
+              toId != null &&
+              r.fromCurrencyId == fromId &&
+              r.toCurrencyId == toId;
+          // Fallback: match by nested currency code
+          final byCode =
+              r.fromCurrency?.code == _fromCode &&
+              r.toCurrency?.code == _toCode;
+          if (byId || byCode) {
             rate = r;
             break;
           }
@@ -463,7 +454,7 @@ class _MainCardState extends State<_MainCard> {
                     });
                   }
                   return Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                    crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
                       Expanded(
                         child: _CurrencyDropdownButton(
@@ -619,7 +610,7 @@ class _MainCardState extends State<_MainCard> {
                 const SizedBox(width: 10),
                 const Expanded(
                   child: AppText(
-                    'آخر الطلبات المنجزة',
+                    'آخر طلبات الصرف',
                     fontSize: 14,
                     fontWeight: FontWeight.w700,
                   ),
@@ -658,16 +649,13 @@ class _MainCardState extends State<_MainCard> {
                 initial: () => const SizedBox.shrink(),
                 loading: () => _recentShimmer(),
                 success: (all) {
-                  final done = all
-                      .where((r) => r.status == 'accepted')
-                      .take(5)
-                      .toList();
-                  if (done.isEmpty) {
+                  final recent = all.take(5).toList();
+                  if (recent.isEmpty) {
                     return const Padding(
                       padding: EdgeInsets.symmetric(vertical: 24),
                       child: Center(
                         child: AppText(
-                          'لا توجد طلبات منجزة',
+                          'لا توجد طلبات صرف',
                           color: AppColors.kGreyColor,
                           fontWeight: FontWeight.w400,
                         ),
@@ -675,13 +663,13 @@ class _MainCardState extends State<_MainCard> {
                     );
                   }
                   return Column(
-                    children: done
+                    children: recent
                         .asMap()
                         .entries
                         .map(
-                          (e) => _CompletedRow(
+                          (e) => _RequestRow(
                             request: e.value,
-                            isLast: e.key == done.length - 1,
+                            isLast: e.key == recent.length - 1,
                           ),
                         )
                         .toList(),
@@ -772,7 +760,7 @@ class _CurrencyDropdownButton extends StatelessWidget {
   });
 
   String _fmt(double v) =>
-      v >= 100 ? v.toStringAsFixed(0) : v.toStringAsFixed(2);
+      v >= 1000 ? v.toStringAsFixed(0) : v.toStringAsFixed(2);
 
   @override
   Widget build(BuildContext context) {
@@ -789,106 +777,126 @@ class _CurrencyDropdownButton extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
+        padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
         decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.14),
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(
-            color: Colors.white.withValues(alpha: 0.24),
-            width: 1,
-          ),
+          color: Colors.white.withValues(alpha: 0.11),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.22)),
         ),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // direction label
-            AppText(
-              label,
-              fontSize: 9,
-              color: Colors.white.withValues(alpha: 0.6),
-              fontWeight: FontWeight.w400,
-            ),
-            const SizedBox(height: 4),
-            // symbol + code + arrow
+            // ── top row: direction label + arrow ─────────────────────────
             Row(
-              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                if (sel?.symbol != null) ...[
-                  AppText(
-                    sel!.symbol!,
-                    fontSize: 18,
-                    color: Colors.white,
-                    fontWeight: FontWeight.w700,
-                  ),
-                  const SizedBox(width: 4),
-                ],
                 AppText(
-                  selectedCode,
-                  fontSize: 15,
-                  color: Colors.white,
-                  fontWeight: FontWeight.w700,
+                  label,
+                  fontSize: 10,
+                  color: Colors.white.withValues(alpha: 0.55),
+                  fontWeight: FontWeight.w500,
                 ),
-                const SizedBox(width: 2),
                 Icon(
-                  Icons.arrow_drop_down_rounded,
-                  color: Colors.white.withValues(alpha: 0.7),
+                  Icons.keyboard_arrow_down_rounded,
+                  color: Colors.white.withValues(alpha: 0.6),
                   size: 18,
                 ),
               ],
             ),
-            if (sel?.name != null)
-              AppText(
-                sel!.name!,
-                fontSize: 9,
-                color: Colors.white.withValues(alpha: 0.6),
-                fontWeight: FontWeight.w400,
-                maxLines: 1,
-              ),
-            // rate value section
+            const SizedBox(height: 8),
+            // ── currency identity ─────────────────────────────────────────
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                // symbol badge
+                Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: color.withValues(alpha: 0.18),
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: color.withValues(alpha: 0.35),
+                      width: 1,
+                    ),
+                  ),
+                  alignment: Alignment.center,
+                  child: AppText(
+                    sel?.symbol ??
+                        (selectedCode.isNotEmpty ? selectedCode[0] : '?'),
+                    fontSize: 14,
+                    color: Colors.white,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      AppText(
+                        selectedCode.isEmpty ? '—' : selectedCode,
+                        fontSize: 16,
+                        color: Colors.white,
+                        fontWeight: FontWeight.w700,
+                      ),
+                      if (sel?.name != null)
+                        AppText(
+                          sel!.name!,
+                          fontSize: 9,
+                          color: Colors.white.withValues(alpha: 0.55),
+                          fontWeight: FontWeight.w400,
+                          maxLines: 1,
+                        ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            // ── rate section ──────────────────────────────────────────────
             if (isLoadingRate) ...[
-              const SizedBox(height: 8),
+              const SizedBox(height: 10),
+              Container(height: 1, color: Colors.white.withValues(alpha: 0.12)),
+              const SizedBox(height: 10),
               Container(
-                height: 24,
-                width: 60,
+                height: 12,
+                width: 50,
                 decoration: BoxDecoration(
                   color: Colors.white.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(6),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+              ),
+              const SizedBox(height: 6),
+              Container(
+                height: 20,
+                width: 80,
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(4),
                 ),
               ),
             ] else if (rateValue != null) ...[
-              const SizedBox(height: 8),
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 5),
-                decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: color.withValues(alpha: 0.25)),
-                ),
-                child: Column(
-                  children: [
-                    if (rateLabel != null && rateIcon != null)
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(rateIcon, color: color, size: 10),
-                          const SizedBox(width: 3),
-                          AppText(
-                            rateLabel!,
-                            fontSize: 9,
-                            color: color,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ],
-                      ),
-                    AppText(
-                      _fmt(rateValue!),
-                      fontSize: 18,
-                      color: Colors.white,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ],
-                ),
+              const SizedBox(height: 10),
+              Container(height: 1, color: Colors.white.withValues(alpha: 0.12)),
+              const SizedBox(height: 10),
+              Row(
+                children: [
+                  Icon(rateIcon, color: color, size: 12),
+                  const SizedBox(width: 4),
+                  AppText(
+                    rateLabel ?? '',
+                    fontSize: 10,
+                    color: color,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 3),
+              AppText(
+                _fmt(rateValue!),
+                fontSize: 22,
+                color: Colors.white,
+                fontWeight: FontWeight.w700,
               ),
             ],
           ],
@@ -932,7 +940,7 @@ class _EditRateSheet extends StatelessWidget {
           orElse: () => false,
         );
         return _BottomSheet(
-          title: 'تعديل سعر ${rate.fromCurrencyCode} / ${rate.toCurrencyCode}',
+          title: 'تعديل سعر الصرف',
           child: Form(
             key: cubit.formKey,
             child: Column(
@@ -952,6 +960,12 @@ class _EditRateSheet extends StatelessWidget {
                   prefixIconColor: AppColors.kRedColor,
                   keyboardType: TextInputType.number,
                   validator: (v) => v == null || v.isEmpty ? 'مطلوب' : null,
+                ),
+                AppTextFormField(
+                  label: 'نسبة العمولة %',
+                  controller: cubit.commissionController,
+                  icon: Icons.percent_rounded,
+                  keyboardType: TextInputType.number,
                 ),
                 const SizedBox(height: 10),
                 AppButton(
@@ -1390,15 +1404,24 @@ class _CurrencyFormSheetState extends State<_CurrencyFormSheet> {
   }
 }
 
-class _CompletedRow extends StatelessWidget {
+class _RequestRow extends StatelessWidget {
   final ExchangeRequestModel request;
   final bool isLast;
 
-  const _CompletedRow({required this.request, required this.isLast});
+  const _RequestRow({required this.request, required this.isLast});
+
+  static const _statusConfig = {
+    0: (icon: Icons.hourglass_empty_rounded, color: Color(0xFFF59E0B), label: 'معلّق'),
+    1: (icon: Icons.check_rounded, color: AppColors.kSuccessColor, label: 'مقبول'),
+    2: (icon: Icons.close_rounded, color: AppColors.kRedColor, label: 'مرفوض'),
+    3: (icon: Icons.pause_rounded, color: AppColors.kGreyColor, label: 'موقوف'),
+  };
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cfg = _statusConfig[request.status] ??
+        (icon: Icons.help_outline_rounded, color: AppColors.kGreyColor, label: '—');
 
     return Column(
       children: [
@@ -1410,14 +1433,10 @@ class _CompletedRow extends StatelessWidget {
                 width: 40,
                 height: 40,
                 decoration: BoxDecoration(
-                  color: AppColors.kSuccessColor.withValues(alpha: 0.1),
+                  color: cfg.color.withValues(alpha: 0.1),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(
-                  Icons.check_rounded,
-                  color: AppColors.kSuccessColor,
-                  size: 20,
-                ),
+                child: Icon(cfg.icon, color: cfg.color, size: 20),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -1425,7 +1444,7 @@ class _CompletedRow extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     AppText(
-                      request.requesterName ?? '—',
+                      request.user?.fullName ?? '—',
                       fontSize: 13,
                       fontWeight: FontWeight.w700,
                     ),
@@ -1433,7 +1452,7 @@ class _CompletedRow extends StatelessWidget {
                     Row(
                       children: [
                         _CodeChip(
-                          code: request.fromCurrencyCode ?? '—',
+                          code: request.fromCurrency?.code ?? '—',
                           color: AppColors.kRedColor,
                         ),
                         const Padding(
@@ -1445,12 +1464,12 @@ class _CompletedRow extends StatelessWidget {
                           ),
                         ),
                         _CodeChip(
-                          code: request.toCurrencyCode ?? '—',
+                          code: request.toCurrency?.code ?? '—',
                           color: AppColors.kSuccessColor,
                         ),
                         const SizedBox(width: 8),
                         AppText(
-                          '${_fmt(request.amount)} ${request.fromCurrencyCode ?? ''}',
+                          '${_fmt(request.amount)} ${request.fromCurrency?.code ?? ''}',
                           fontSize: 11,
                           color: AppColors.kGreyColor,
                           fontWeight: FontWeight.w400,
@@ -1464,14 +1483,21 @@ class _CompletedRow extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   AppText(
-                    '${_fmt(request.convertedAmount)} ${request.toCurrencyCode ?? ''}',
+                    '${_fmt(request.finalAmount)} ${request.toCurrency?.code ?? ''}',
                     fontSize: 13,
-                    color: AppColors.kSuccessColor,
+                    color: cfg.color,
                     fontWeight: FontWeight.w700,
                   ),
                   const SizedBox(height: 2),
                   AppText(
-                    _fmtDate(request.createdAt),
+                    cfg.label,
+                    fontSize: 10,
+                    color: cfg.color,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  const SizedBox(height: 1),
+                  AppText(
+                    _fmtDate(request.createdAt ?? request.createdOn),
                     fontSize: 10,
                     color: AppColors.kGreyColor.withValues(alpha: 0.65),
                     fontWeight: FontWeight.w400,

@@ -1,70 +1,53 @@
+import 'package:exchange_admin/pages/auth/signin/model/user_model.dart';
+import 'package:exchange_admin/pages/currencies/model/currency_model.dart';
+import 'package:freezed_annotation/freezed_annotation.dart';
+
+part 'exchange_request_model.g.dart';
+
+@JsonSerializable()
 class ExchangeRequestModel {
   final String? id;
-  final String? requesterName;
-  final String? requesterPhone;
-  final String? fromCurrencyCode;
-  final String? toCurrencyCode;
+  final String? requestNumber;
+  final String? userId;
+  final String? fromCurrencyId;
+  final String? toCurrencyId;
   final double? amount;
   final double? exchangeRate;
-  final double? convertedAmount;
-  final String? status;
-  final String? createdAt;
+  final double? appliedRate;
+  final double? commissionPercent;
+  final double? commissionAmount;
+  final double? finalAmount;
+  final double? paymentMethod;
+  final int? status;
   final String? notes;
+  final String? createdOn;
+  final String? createdAt;
+  final UserModel? user;
+  final CurrencyModel? fromCurrency;
+  final CurrencyModel? toCurrency;
 
   const ExchangeRequestModel({
     this.id,
-    this.requesterName,
-    this.requesterPhone,
-    this.fromCurrencyCode,
-    this.toCurrencyCode,
+    this.requestNumber,
+    this.userId,
+    this.fromCurrencyId,
+    this.toCurrencyId,
     this.amount,
     this.exchangeRate,
-    this.convertedAmount,
+    this.appliedRate,
+    this.commissionPercent,
+    this.commissionAmount,
+    this.finalAmount,
+    this.paymentMethod,
     this.status,
-    this.createdAt,
     this.notes,
+    this.createdOn,
+    this.createdAt,
+    this.user,
+    this.fromCurrency,
+    this.toCurrency,
   });
-
   factory ExchangeRequestModel.fromJson(Map<String, dynamic> json) =>
-      ExchangeRequestModel(
-        id: json['id'] as String?,
-        requesterName: json['requesterName'] as String?,
-        requesterPhone: json['requesterPhone'] as String?,
-        fromCurrencyCode: json['fromCurrencyCode'] as String?,
-        toCurrencyCode: json['toCurrencyCode'] as String?,
-        amount: (json['amount'] as num?)?.toDouble(),
-        exchangeRate: (json['exchangeRate'] as num?)?.toDouble(),
-        convertedAmount: (json['convertedAmount'] as num?)?.toDouble(),
-        status: json['status'] as String?,
-        createdAt: json['createdAt'] as String?,
-        notes: json['notes'] as String?,
-      );
-
-  Map<String, dynamic> toJson() => {
-        'id': id,
-        'requesterName': requesterName,
-        'requesterPhone': requesterPhone,
-        'fromCurrencyCode': fromCurrencyCode,
-        'toCurrencyCode': toCurrencyCode,
-        'amount': amount,
-        'exchangeRate': exchangeRate,
-        'convertedAmount': convertedAmount,
-        'status': status,
-        'createdAt': createdAt,
-        'notes': notes,
-      };
-
-  ExchangeRequestModel copyWith({String? status}) => ExchangeRequestModel(
-        id: id,
-        requesterName: requesterName,
-        requesterPhone: requesterPhone,
-        fromCurrencyCode: fromCurrencyCode,
-        toCurrencyCode: toCurrencyCode,
-        amount: amount,
-        exchangeRate: exchangeRate,
-        convertedAmount: convertedAmount,
-        status: status ?? this.status,
-        createdAt: createdAt,
-        notes: notes,
-      );
+      _$ExchangeRequestModelFromJson(json);
+  Map<String, dynamic> toJson() => _$ExchangeRequestModelToJson(this);
 }

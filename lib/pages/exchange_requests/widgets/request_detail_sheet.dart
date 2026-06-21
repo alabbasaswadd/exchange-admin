@@ -182,7 +182,7 @@ class RequestDetailSheet extends StatelessWidget {
                   _DetailRow(
                     icon: Icons.calendar_today_rounded,
                     label: 'التاريخ',
-                    value: _fmtDate(request.createdAt ?? request.createdOn),
+                    value: _fmtDateTime(request.createdAt ?? request.createdOn),
                   ),
                   const SizedBox(height: 14),
                   // ── exchange amounts block ────────────────────────────
@@ -198,100 +198,140 @@ class RequestDetailSheet extends StatelessWidget {
                     child: Column(
                       children: [
                         Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                AppText(
-                                  'من',
-                                  fontSize: 11,
-                                  color: AppColors.kGreyColor,
-                                  fontWeight: FontWeight.w400,
-                                ),
-                                AppText(
-                                  '${_fmt(request.amount)} ${request.fromCurrency?.code ?? ''}',
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.w700,
-                                  color: AppColors.kRedColor,
-                                ),
-                                if (request.fromCurrency?.name != null)
-                                  AppText(
-                                    request.fromCurrency!.name!,
+                            // From
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const AppText(
+                                    'المبلغ المُرسَل',
                                     fontSize: 10,
                                     color: AppColors.kGreyColor,
                                     fontWeight: FontWeight.w400,
                                   ),
-                              ],
+                                  const SizedBox(height: 3),
+                                  Row(
+                                    crossAxisAlignment: CrossAxisAlignment.end,
+                                    children: [
+                                      AppText(
+                                        _fmt(request.amount),
+                                        fontSize: 20,
+                                        fontWeight: FontWeight.w700,
+                                        color: AppColors.kRedColor,
+                                      ),
+                                      if (request.fromCurrency?.code != null) ...[
+                                        const SizedBox(width: 4),
+                                        Padding(
+                                          padding: const EdgeInsets.only(bottom: 2),
+                                          child: AppText(
+                                            request.fromCurrency!.code!,
+                                            fontSize: 12,
+                                            color: AppColors.kRedColor.withValues(alpha: 0.7),
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                      ],
+                                    ],
+                                  ),
+                                  if (request.fromCurrency?.name != null)
+                                    AppText(
+                                      request.fromCurrency!.name!,
+                                      fontSize: 11,
+                                      color: AppColors.kGreyColor,
+                                      fontWeight: FontWeight.w400,
+                                    ),
+                                ],
+                              ),
                             ),
+                            // Arrow
                             Container(
-                              width: 40,
-                              height: 40,
+                              margin: const EdgeInsets.symmetric(horizontal: 10),
+                              width: 36,
+                              height: 36,
                               decoration: BoxDecoration(
-                                color: AppColors.kPrimaryColor.withValues(
-                                  alpha: 0.1,
-                                ),
+                                color: AppColors.kPrimaryColor.withValues(alpha: 0.1),
                                 shape: BoxShape.circle,
                               ),
                               child: const Icon(
-                                Icons.swap_horiz_rounded,
+                                Icons.trending_flat_rounded,
                                 color: AppColors.kPrimaryColor,
-                                size: 22,
+                                size: 20,
                               ),
                             ),
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.end,
-                              children: [
-                                AppText(
-                                  'إلى',
-                                  fontSize: 11,
-                                  color: AppColors.kGreyColor,
-                                  fontWeight: FontWeight.w400,
-                                ),
-                                AppText(
-                                  '${_fmt(request.finalAmount)} ${request.toCurrency?.code ?? ''}',
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.w700,
-                                  color: AppColors.kSuccessColor,
-                                ),
-                                if (request.toCurrency?.name != null)
-                                  AppText(
-                                    request.toCurrency!.name!,
+                            // To
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.end,
+                                children: [
+                                  const AppText(
+                                    'المبلغ المُستلَم',
                                     fontSize: 10,
                                     color: AppColors.kGreyColor,
                                     fontWeight: FontWeight.w400,
                                   ),
-                              ],
+                                  const SizedBox(height: 3),
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.end,
+                                    crossAxisAlignment: CrossAxisAlignment.end,
+                                    children: [
+                                      AppText(
+                                        _fmt(request.finalAmount),
+                                        fontSize: 20,
+                                        fontWeight: FontWeight.w700,
+                                        color: AppColors.kSuccessColor,
+                                      ),
+                                      if (request.toCurrency?.code != null) ...[
+                                        const SizedBox(width: 4),
+                                        Padding(
+                                          padding: const EdgeInsets.only(bottom: 2),
+                                          child: AppText(
+                                            request.toCurrency!.code!,
+                                            fontSize: 12,
+                                            color: AppColors.kSuccessColor.withValues(alpha: 0.7),
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                      ],
+                                    ],
+                                  ),
+                                  if (request.toCurrency?.name != null)
+                                    AppText(
+                                      request.toCurrency!.name!,
+                                      fontSize: 11,
+                                      color: AppColors.kGreyColor,
+                                      fontWeight: FontWeight.w400,
+                                    ),
+                                ],
+                              ),
                             ),
                           ],
                         ),
                         if (request.appliedRate != null ||
                             request.commissionPercent != null) ...[
-                          const SizedBox(height: 12),
+                          const SizedBox(height: 14),
                           Divider(
                             height: 1,
                             color: AppColors.kGreyColor.withValues(alpha: 0.15),
                           ),
-                          const SizedBox(height: 12),
+                          const SizedBox(height: 14),
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceAround,
                             children: [
                               if (request.appliedRate != null)
                                 _MiniStat(
                                   label: 'سعر الصرف',
-                                  value: request.appliedRate!.toStringAsFixed(
-                                    4,
-                                  ),
+                                  value: _fmtRate(request.appliedRate!),
                                 ),
                               if (request.commissionPercent != null)
                                 _MiniStat(
-                                  label: 'العمولة',
-                                  value: '${request.commissionPercent}%',
+                                  label: 'العمولة %',
+                                  value: '${_fmt(request.commissionPercent)}%',
                                 ),
                               if (request.commissionAmount != null)
                                 _MiniStat(
                                   label: 'مبلغ العمولة',
-                                  value: _fmt(request.commissionAmount),
+                                  value: '${_fmt(request.commissionAmount)} ${request.fromCurrency?.code ?? ''}',
                                 ),
                             ],
                           ),
@@ -447,16 +487,35 @@ class RequestDetailSheet extends StatelessWidget {
 
   String _fmt(double? v) {
     if (v == null) return '—';
-    if (v >= 1000000) return '${(v / 1000000).toStringAsFixed(2)}م';
-    if (v >= 1000) return '${(v / 1000).toStringAsFixed(1)}ك';
-    return v.toStringAsFixed(0);
+    final isWhole = v == v.truncateToDouble();
+    final raw = isWhole ? v.toStringAsFixed(0) : v.toStringAsFixed(2);
+    final parts = raw.split('.');
+    final intWithCommas = parts[0].replaceAllMapped(
+      RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+      (m) => '${m[1]},',
+    );
+    return parts.length > 1 ? '$intWithCommas.${parts[1]}' : intWithCommas;
   }
 
-  String _fmtDate(String? d) {
+  String _fmtRate(double v) {
+    final s = v.toStringAsFixed(4);
+    final parts = s.split('.');
+    final intWithCommas = parts[0].replaceAllMapped(
+      RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+      (m) => '${m[1]},',
+    );
+    return '$intWithCommas.${parts[1]}';
+  }
+
+  String _fmtDateTime(String? d) {
     if (d == null) return '—';
     try {
-      final dt = DateTime.parse(d);
-      return '${dt.day}/${dt.month}/${dt.year}';
+      final dt = DateTime.parse(d).toLocal();
+      final date =
+          '${dt.day.toString().padLeft(2, '0')}/${dt.month.toString().padLeft(2, '0')}/${dt.year}';
+      final hour = dt.hour.toString().padLeft(2, '0');
+      final minute = dt.minute.toString().padLeft(2, '0');
+      return '$date  •  $hour:$minute';
     } catch (_) {
       return d;
     }

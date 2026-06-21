@@ -70,6 +70,7 @@ class _ExchangeRequestsScreenState extends State<ExchangeRequestsScreen> {
               return Column(
                 children: [
                   _FilterChips(filters: _filters, cubit: cubit, isDark: isDark),
+                  _SummarySection(cubit: cubit, isDark: isDark),
                   Expanded(
                     child: RefreshIndicator(
                       color: AppColors.kPrimaryColor,
@@ -208,6 +209,14 @@ class _FilterChips extends StatelessWidget {
     required this.isDark,
   });
 
+  static const _filterMeta = <int?, ({Color color, IconData icon})>{
+    null: (color: AppColors.kPrimaryColor, icon: Icons.all_inclusive_rounded),
+    0: (color: Color(0xFFF59E0B), icon: Icons.hourglass_empty_rounded),
+    1: (color: AppColors.kSuccessColor, icon: Icons.check_circle_outline_rounded),
+    2: (color: AppColors.kRedColor, icon: Icons.cancel_outlined),
+    3: (color: AppColors.kGreyColor, icon: Icons.pause_circle_outline_rounded),
+  };
+
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<
@@ -218,31 +227,87 @@ class _FilterChips extends StatelessWidget {
           prev.maybeWhen(success: (_) => true, orElse: () => false),
       builder: (context, _) {
         return Container(
-          color: isDark ? AppColors.kCardDark : Colors.white,
+          decoration: BoxDecoration(
+            color: isDark ? AppColors.kCardDark : Colors.white,
+            boxShadow: [
+              if (!isDark)
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.05),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+            ],
+          ),
           child: SizedBox(
-            height: 52,
+            height: 58,
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
               itemCount: filters.length,
               separatorBuilder: (_, __) => const SizedBox(width: 8),
               itemBuilder: (_, index) {
                 final (value, label) = filters[index];
                 final isSelected = cubit.statusFilter == value;
-                return FilterChip(
-                  label: Text(label),
-                  selected: isSelected,
-                  onSelected: (_) => cubit.setFilter(value),
-                  selectedColor: AppColors.kPrimaryColor.withValues(
-                    alpha: 0.15,
-                  ),
-                  checkmarkColor: AppColors.kPrimaryColor,
-                  labelStyle: TextStyle(
+                final meta = _filterMeta[value] ??
+                    (color: AppColors.kGreyColor, icon: Icons.circle_outlined);
+                final color = meta.color;
+                return AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  curve: Curves.easeInOut,
+                  decoration: BoxDecoration(
                     color: isSelected
-                        ? AppColors.kPrimaryColor
-                        : AppColors.kGreyColor,
-                    fontFamily: 'Cairo-Bold',
-                    fontSize: 12,
+                        ? color
+                        : (isDark
+                            ? color.withValues(alpha: 0.12)
+                            : color.withValues(alpha: 0.08)),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: isSelected
+                          ? color
+                          : color.withValues(alpha: 0.25),
+                      width: 1.2,
+                    ),
+                    boxShadow: isSelected
+                        ? [
+                            BoxShadow(
+                              color: color.withValues(alpha: 0.30),
+                              blurRadius: 8,
+                              offset: const Offset(0, 3),
+                            ),
+                          ]
+                        : [],
+                  ),
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: () => cubit.setFilter(value),
+                      borderRadius: BorderRadius.circular(20),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 4),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              meta.icon,
+                              size: 14,
+                              color: isSelected
+                                  ? Colors.white
+                                  : color,
+                            ),
+                            const SizedBox(width: 5),
+                            Text(
+                              label,
+                              style: TextStyle(
+                                color: isSelected ? Colors.white : color,
+                                fontFamily: 'Cairo-Bold',
+                                fontSize: 12,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
                   ),
                 );
               },
@@ -357,74 +422,77 @@ class _RequestCard extends StatelessWidget {
             ),
             const SizedBox(height: 10),
             Container(
-              padding: const EdgeInsets.all(10),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
               decoration: BoxDecoration(
-                color: AppColors.kPrimaryColor.withValues(alpha: 0.05),
-                borderRadius: BorderRadius.circular(10),
+                color: isDark
+                    ? Colors.white.withValues(alpha: 0.04)
+                    : AppColors.kPrimaryColor.withValues(alpha: 0.04),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: AppColors.kPrimaryColor.withValues(alpha: 0.10),
+                ),
               ),
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      AppText(
-                        'من',
-                        fontSize: 10,
-                        color: AppColors.kGreyColor,
-                        fontWeight: FontWeight.w400,
-                      ),
-                      Row(
-                        children: [
-                          AppText(
-                            _fmt(request.amount),
-                            fontSize: 16,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.kRedColor,
-                          ),
-                          const SizedBox(width: 4),
-                          AppText(
-                            request.fromCurrency?.code ?? '—',
-                            fontSize: 11,
-                            color: AppColors.kGreyColor,
-                            fontWeight: FontWeight.w400,
-                          ),
-                        ],
-                      ),
-                    ],
+                  // From currency
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        AppText(
+                          _fmt(request.amount),
+                          fontSize: 17,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.kRedColor,
+                        ),
+                        const SizedBox(height: 2),
+                        AppText(
+                          request.fromCurrency?.name ??
+                              request.fromCurrency?.code ??
+                              '—',
+                          fontSize: 11,
+                          color: AppColors.kGreyColor,
+                          fontWeight: FontWeight.w400,
+                        ),
+                      ],
+                    ),
                   ),
-                  const Icon(
-                    Icons.swap_horiz_rounded,
-                    color: AppColors.kPrimaryColor,
-                    size: 22,
+                  // Arrow
+                  Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 8),
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: AppColors.kPrimaryColor.withValues(alpha: 0.10),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.trending_flat_rounded,
+                      color: AppColors.kPrimaryColor,
+                      size: 18,
+                    ),
                   ),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      AppText(
-                        'إلى',
-                        fontSize: 10,
-                        color: AppColors.kGreyColor,
-                        fontWeight: FontWeight.w400,
-                      ),
-                      Row(
-                        children: [
-                          AppText(
-                            _fmt(request.finalAmount),
-                            fontSize: 16,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.kSuccessColor,
-                          ),
-                          const SizedBox(width: 4),
-                          AppText(
-                            request.toCurrency?.code ?? '—',
-                            fontSize: 11,
-                            color: AppColors.kGreyColor,
-                            fontWeight: FontWeight.w400,
-                          ),
-                        ],
-                      ),
-                    ],
+                  // To currency
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        AppText(
+                          _fmt(request.finalAmount),
+                          fontSize: 17,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.kSuccessColor,
+                        ),
+                        const SizedBox(height: 2),
+                        AppText(
+                          request.toCurrency?.name ??
+                              request.toCurrency?.code ??
+                              '—',
+                          fontSize: 11,
+                          color: AppColors.kGreyColor,
+                          fontWeight: FontWeight.w400,
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ),
@@ -432,7 +500,7 @@ class _RequestCard extends StatelessWidget {
             const SizedBox(height: 8),
             Row(
               children: [
-                Icon(
+                const Icon(
                   Icons.calendar_today_outlined,
                   size: 11,
                   color: AppColors.kGreyColor,
@@ -469,9 +537,14 @@ class _RequestCard extends StatelessWidget {
 
   String _fmt(double? v) {
     if (v == null) return '—';
-    if (v >= 1000000) return '${(v / 1000000).toStringAsFixed(2)}م';
-    if (v >= 1000) return '${(v / 1000).toStringAsFixed(1)}ك';
-    return v.toStringAsFixed(0);
+    final isWhole = v == v.truncateToDouble();
+    final raw = isWhole ? v.toStringAsFixed(0) : v.toStringAsFixed(2);
+    final parts = raw.split('.');
+    final intWithCommas = parts[0].replaceAllMapped(
+      RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+      (m) => '${m[1]},',
+    );
+    return parts.length > 1 ? '$intWithCommas.${parts[1]}' : intWithCommas;
   }
 
   String _fmtDate(String? d) {
@@ -485,3 +558,314 @@ class _RequestCard extends StatelessWidget {
   }
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// ACCEPTED ORDERS SUMMARY SECTION
+// ─────────────────────────────────────────────────────────────────────────────
+
+typedef _PairSummary = ({
+  String fromCode,
+  String fromName,
+  String toCode,
+  String toName,
+  int count,
+  double totalSent,
+  double totalReceived,
+  double totalCommission,
+});
+
+class _SummarySection extends StatelessWidget {
+  final ExchangeRequestsCubit cubit;
+  final bool isDark;
+
+  const _SummarySection({required this.cubit, required this.isDark});
+
+  List<_PairSummary> _compute(List<ExchangeRequestModel> accepted) {
+    final map = <String, Map<String, dynamic>>{};
+    for (final r in accepted) {
+      final fCode = r.fromCurrency?.code ?? '?';
+      final tCode = r.toCurrency?.code ?? '?';
+      final key = '$fCode→$tCode';
+      map.putIfAbsent(key, () => {
+        'fromCode': fCode,
+        'fromName': r.fromCurrency?.name ?? fCode,
+        'toCode': tCode,
+        'toName': r.toCurrency?.name ?? tCode,
+        'count': 0,
+        'sent': 0.0,
+        'received': 0.0,
+        'commission': 0.0,
+      });
+      map[key]!['count'] = (map[key]!['count'] as int) + 1;
+      map[key]!['sent'] = (map[key]!['sent'] as double) + (r.amount ?? 0);
+      map[key]!['received'] =
+          (map[key]!['received'] as double) + (r.finalAmount ?? 0);
+      map[key]!['commission'] =
+          (map[key]!['commission'] as double) + (r.commissionAmount ?? 0);
+    }
+    return map.values
+        .map((m) => (
+              fromCode: m['fromCode'] as String,
+              fromName: m['fromName'] as String,
+              toCode: m['toCode'] as String,
+              toName: m['toName'] as String,
+              count: m['count'] as int,
+              totalSent: m['sent'] as double,
+              totalReceived: m['received'] as double,
+              totalCommission: m['commission'] as double,
+            ))
+        .toList();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocBuilder<ExchangeRequestsCubit,
+        SigninState<List<ExchangeRequestModel>>>(
+      buildWhen: (_, curr) =>
+          curr.maybeWhen(success: (_) => true, orElse: () => false),
+      builder: (context, _) {
+        final accepted = cubit.acceptedRequests;
+        if (accepted.isEmpty) return const SizedBox.shrink();
+        final pairs = _compute(accepted);
+        return Container(
+          color: isDark ? AppColors.kBackgroundDark : const Color(0xFFF0F4F8),
+          padding: const EdgeInsets.fromLTRB(16, 14, 0, 14),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: const EdgeInsets.only(right: 16, bottom: 10),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 6,
+                      height: 18,
+                      decoration: BoxDecoration(
+                        color: AppColors.kSuccessColor,
+                        borderRadius: BorderRadius.circular(3),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    const AppText(
+                      'ملخص الطلبات المقبولة',
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                    ),
+                    const SizedBox(width: 6),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 7, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: AppColors.kSuccessColor.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: AppText(
+                        '${accepted.length} طلب',
+                        fontSize: 10,
+                        color: AppColors.kSuccessColor,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              SizedBox(
+                height: 178,
+                child: ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  clipBehavior: Clip.none,
+                  itemCount: pairs.length,
+                  separatorBuilder: (_, __) => const SizedBox(width: 10),
+                  itemBuilder: (_, i) =>
+                      _PairCard(pair: pairs[i], isDark: isDark),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _PairCard extends StatelessWidget {
+  final _PairSummary pair;
+  final bool isDark;
+
+  const _PairCard({required this.pair, required this.isDark});
+
+  String _fmt(double v) {
+    final isWhole = v == v.truncateToDouble();
+    final raw = isWhole ? v.toStringAsFixed(0) : v.toStringAsFixed(2);
+    final parts = raw.split('.');
+    final intWithCommas = parts[0].replaceAllMapped(
+      RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+      (m) => '${m[1]},',
+    );
+    return parts.length > 1 ? '$intWithCommas.${parts[1]}' : intWithCommas;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 215,
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.kCardDark : Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          if (!isDark)
+            BoxShadow(
+              color: AppColors.kPrimaryColor.withValues(alpha: 0.08),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                colors: [AppColors.kSuccessColor, Color(0xFF15803D)],
+                begin: Alignment.topRight,
+                end: Alignment.bottomLeft,
+              ),
+              borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Row(
+                    children: [
+                      AppText(pair.fromCode,
+                          fontSize: 13,
+                          color: Colors.white,
+                          fontWeight: FontWeight.w700),
+                      const Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 5),
+                        child: Icon(Icons.trending_flat_rounded,
+                            color: Colors.white, size: 14),
+                      ),
+                      AppText(pair.toCode,
+                          fontSize: 13,
+                          color: Colors.white,
+                          fontWeight: FontWeight.w700),
+                    ],
+                  ),
+                ),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: AppText('${pair.count} طلب',
+                      fontSize: 10,
+                      color: Colors.white,
+                      fontWeight: FontWeight.w600),
+                ),
+              ],
+            ),
+          ),
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  _StatRow(
+                    label: 'إجمالي المُستلَم',
+                    amount: _fmt(pair.totalSent),
+                    currency: pair.fromName,
+                    color: AppColors.kRedColor,
+                  ),
+                  Divider(
+                      height: 1,
+                      color: AppColors.kGreyColor.withValues(alpha: 0.10)),
+                  _StatRow(
+                    label: 'إجمالي المُسلَّم',
+                    amount: _fmt(pair.totalReceived),
+                    currency: pair.toName,
+                    color: AppColors.kSuccessColor,
+                  ),
+                  if (pair.totalCommission > 0) ...[
+                    Divider(
+                        height: 1,
+                        color: AppColors.kGreyColor.withValues(alpha: 0.10)),
+                    _StatRow(
+                      label: 'إجمالي العمولة',
+                      amount: _fmt(pair.totalCommission),
+                      currency: pair.fromCode,
+                      color: const Color(0xFFF59E0B),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _StatRow extends StatelessWidget {
+  final String label;
+  final String amount;
+  final String currency;
+  final Color color;
+
+  const _StatRow({
+    required this.label,
+    required this.amount,
+    required this.currency,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          margin: const EdgeInsets.only(top: 3),
+          width: 5,
+          height: 5,
+          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+        ),
+        const SizedBox(width: 6),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              AppText(label,
+                  fontSize: 9,
+                  color: AppColors.kGreyColor,
+                  fontWeight: FontWeight.w400),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Flexible(
+                    child: AppText(amount,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        color: color),
+                  ),
+                  const SizedBox(width: 3),
+                  Flexible(
+                    child: AppText(currency,
+                        fontSize: 9,
+                        color: AppColors.kGreyColor,
+                        fontWeight: FontWeight.w400),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}

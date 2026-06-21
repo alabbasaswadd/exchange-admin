@@ -687,27 +687,6 @@ class _CurrencyDropdownButton extends StatelessWidget {
             Row(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                // symbol badge
-                Container(
-                  width: 36,
-                  height: 36,
-                  decoration: BoxDecoration(
-                    color: color.withValues(alpha: 0.18),
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: color.withValues(alpha: 0.35),
-                      width: 1,
-                    ),
-                  ),
-                  alignment: Alignment.center,
-                  child: AppText(
-                    sel?.symbol ??
-                        (selectedCode.isNotEmpty ? selectedCode[0] : '?'),
-                    fontSize: 14,
-                    color: Colors.white,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Column(

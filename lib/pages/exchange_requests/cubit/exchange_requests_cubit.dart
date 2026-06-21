@@ -30,6 +30,9 @@ class ExchangeRequestsCubit
     _emitFiltered();
   }
 
+  List<ExchangeRequestModel> get acceptedRequests =>
+      _all.where((r) => r.status == 1).toList();
+
   void _emitFiltered() {
     final filtered = statusFilter == null
         ? List<ExchangeRequestModel>.from(_all)

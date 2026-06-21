@@ -12,13 +12,13 @@ class ExchangeRatesApi extends BaseApi {
   Future<ApiResult<List<ExchangeRateModel>>> getRates() =>
       execute(request: () => _service.getExchangeRates());
 
-  Future<ApiResult<bool>> updateRate(
+  Future<ApiResult<ExchangeRateModel>> updateRate(
     String id,
     ExchangeRateRequestModel request,
   ) => execute(
     request: () async {
-      await _service.updateExchangeRate(id, request);
-      return true;
+      final rate = await _service.updateExchangeRate(id, request);
+      return rate;
     },
   );
 }

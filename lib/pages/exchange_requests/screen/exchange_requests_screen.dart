@@ -5,6 +5,7 @@ import 'package:exchange_admin/core/constants/colors.dart';
 import 'package:exchange_admin/pages/auth/signin/cubit/signin_state.dart';
 import 'package:exchange_admin/pages/exchange_requests/cubit/exchange_requests_cubit.dart';
 import 'package:exchange_admin/pages/exchange_requests/model/exchange_request_model.dart';
+import 'package:exchange_admin/pages/exchange_requests/model/exchange_request_request_model.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -34,8 +35,9 @@ class _ExchangeRequestsScreenState extends State<ExchangeRequestsScreen> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
-      backgroundColor:
-          isDark ? AppColors.kBackgroundDark : const Color(0xFFF0F4F8),
+      backgroundColor: isDark
+          ? AppColors.kBackgroundDark
+          : const Color(0xFFF0F4F8),
       appBar: AppBar(
         backgroundColor: isDark
             ? AppColors.kPrimaryColorDarkMode
@@ -50,39 +52,42 @@ class _ExchangeRequestsScreenState extends State<ExchangeRequestsScreen> {
         centerTitle: false,
         elevation: 0,
       ),
-      body: BlocConsumer<ExchangeRequestsCubit,
-          SigninState<List<ExchangeRequestModel>>>(
-        listenWhen: (prev, curr) =>
-            prev.maybeWhen(loading: () => true, orElse: () => false),
-        listener: (context, state) {
-          state.maybeWhen(
-            error: (msg) => AppSnackbar.showError(context, msg),
-            orElse: () {},
-          );
-        },
-        builder: (context, state) {
-          final cubit = context.read<ExchangeRequestsCubit>();
-          return Column(
-            children: [
-              _FilterChips(filters: _filters, cubit: cubit, isDark: isDark),
-              Expanded(
-                child: RefreshIndicator(
-                  color: AppColors.kPrimaryColor,
-                  onRefresh: () => cubit.fetchRequests(),
-                  child: state.when(
-                    initial: () => const SizedBox.shrink(),
-                    loading: () => _buildShimmer(),
-                    success: (requests) => requests.isEmpty
-                        ? _buildEmpty()
-                        : _buildList(requests, cubit),
-                    error: (msg) => _buildError(msg, cubit),
+      body:
+          BlocConsumer<
+            ExchangeRequestsCubit,
+            SigninState<List<ExchangeRequestModel>>
+          >(
+            listenWhen: (prev, curr) =>
+                prev.maybeWhen(loading: () => true, orElse: () => false),
+            listener: (context, state) {
+              state.maybeWhen(
+                error: (msg) => AppSnackbar.showError(context, msg),
+                orElse: () {},
+              );
+            },
+            builder: (context, state) {
+              final cubit = context.read<ExchangeRequestsCubit>();
+              return Column(
+                children: [
+                  _FilterChips(filters: _filters, cubit: cubit, isDark: isDark),
+                  Expanded(
+                    child: RefreshIndicator(
+                      color: AppColors.kPrimaryColor,
+                      onRefresh: () => cubit.fetchRequests(),
+                      child: state.when(
+                        initial: () => const SizedBox.shrink(),
+                        loading: () => _buildShimmer(),
+                        success: (requests) => requests.isEmpty
+                            ? _buildEmpty()
+                            : _buildList(requests, cubit),
+                        error: (msg) => _buildError(msg, cubit),
+                      ),
+                    ),
                   ),
-                ),
-              ),
-            ],
-          );
-        },
-      ),
+                ],
+              );
+            },
+          ),
     );
   }
 
@@ -205,12 +210,12 @@ class _FilterChips extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<ExchangeRequestsCubit,
-        SigninState<List<ExchangeRequestModel>>>(
-      buildWhen: (prev, curr) => prev.maybeWhen(
-        success: (_) => true,
-        orElse: () => false,
-      ),
+    return BlocBuilder<
+      ExchangeRequestsCubit,
+      SigninState<List<ExchangeRequestModel>>
+    >(
+      buildWhen: (prev, curr) =>
+          prev.maybeWhen(success: (_) => true, orElse: () => false),
       builder: (context, _) {
         return Container(
           color: isDark ? AppColors.kCardDark : Colors.white,
@@ -218,8 +223,7 @@ class _FilterChips extends StatelessWidget {
             height: 52,
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               itemCount: filters.length,
               separatorBuilder: (_, __) => const SizedBox(width: 8),
               itemBuilder: (_, index) {
@@ -229,8 +233,9 @@ class _FilterChips extends StatelessWidget {
                   label: Text(label),
                   selected: isSelected,
                   onSelected: (_) => cubit.setFilter(value),
-                  selectedColor:
-                      AppColors.kPrimaryColor.withValues(alpha: 0.15),
+                  selectedColor: AppColors.kPrimaryColor.withValues(
+                    alpha: 0.15,
+                  ),
                   checkmarkColor: AppColors.kPrimaryColor,
                   labelStyle: TextStyle(
                     color: isSelected
@@ -263,33 +268,30 @@ class _RequestCard extends StatelessWidget {
     0: (
       color: Color(0xFFF59E0B),
       label: 'معلّق',
-      icon: Icons.hourglass_empty_rounded
+      icon: Icons.hourglass_empty_rounded,
     ),
     1: (
       color: AppColors.kSuccessColor,
       label: 'مقبول',
-      icon: Icons.check_circle_rounded
+      icon: Icons.check_circle_rounded,
     ),
-    2: (
-      color: AppColors.kRedColor,
-      label: 'مرفوض',
-      icon: Icons.cancel_rounded
-    ),
+    2: (color: AppColors.kRedColor, label: 'مرفوض', icon: Icons.cancel_rounded),
     3: (
       color: AppColors.kGreyColor,
       label: 'موقوف',
-      icon: Icons.pause_circle_rounded
+      icon: Icons.pause_circle_rounded,
     ),
   };
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final cfg = _statusConfig[request.status] ??
+    final cfg =
+        _statusConfig[request.status] ??
         (
           color: AppColors.kGreyColor,
           label: '—',
-          icon: Icons.help_outline_rounded
+          icon: Icons.help_outline_rounded,
         );
 
     return GestureDetector(
@@ -334,8 +336,10 @@ class _RequestCard extends StatelessWidget {
                   ),
                 ),
                 Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: cfg.color.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(8),
@@ -500,12 +504,15 @@ class _RequestDetailSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final cfg = _statusConfig[request.status] ??
+    final cfg =
+        _statusConfig[request.status] ??
         (color: AppColors.kGreyColor, label: '—');
     final cubit = context.read<ExchangeRequestsCubit>();
 
-    return BlocListener<ExchangeRequestsCubit,
-        SigninState<List<ExchangeRequestModel>>>(
+    return BlocListener<
+      ExchangeRequestsCubit,
+      SigninState<List<ExchangeRequestModel>>
+    >(
       listenWhen: (prev, curr) =>
           prev.maybeWhen(loading: () => true, orElse: () => false),
       listener: (context, state) {
@@ -553,8 +560,10 @@ class _RequestDetailSheet extends StatelessWidget {
                 ),
                 const Spacer(),
                 Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 5,
+                  ),
                   decoration: BoxDecoration(
                     color: cfg.color.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(8),
@@ -681,11 +690,15 @@ class _RequestDetailSheet extends StatelessWidget {
                 fontWeight: FontWeight.w700,
               ),
               const SizedBox(height: 10),
-              BlocBuilder<ExchangeRequestsCubit,
-                  SigninState<List<ExchangeRequestModel>>>(
+              BlocBuilder<
+                ExchangeRequestsCubit,
+                SigninState<List<ExchangeRequestModel>>
+              >(
                 builder: (context, state) {
-                  final isLoading =
-                      state.maybeWhen(loading: () => true, orElse: () => false);
+                  final isLoading = state.maybeWhen(
+                    loading: () => true,
+                    orElse: () => false,
+                  );
                   return Row(
                     children: [
                       Expanded(
@@ -698,7 +711,10 @@ class _RequestDetailSheet extends StatelessWidget {
                             context,
                             'قبول',
                             AppColors.kSuccessColor,
-                            () => cubit.acceptRequest(request.id!),
+                            () => cubit.updateRequest(
+                              request.id!,
+                              const ExchangeRequestRequestModel(newStatus: 1),
+                            ),
                           ),
                         ),
                       ),
@@ -713,7 +729,13 @@ class _RequestDetailSheet extends StatelessWidget {
                             context,
                             'رفض',
                             AppColors.kRedColor,
-                            () => cubit.rejectRequest(request.id!),
+                            () => cubit.updateRequest(
+                              request.id!,
+                              const ExchangeRequestRequestModel(
+                                newStatus: 5,
+                                note: "ما معي رصيد",
+                              ),
+                            ),
                           ),
                         ),
                       ),
@@ -728,7 +750,13 @@ class _RequestDetailSheet extends StatelessWidget {
                             context,
                             'تعليق',
                             AppColors.kWarningColor,
-                            () => cubit.suspendRequest(request.id!),
+                            () => cubit.updateRequest(
+                              request.id!,
+                              const ExchangeRequestRequestModel(
+                                newStatus: 0,
+                                note: 'تم تعليق الطلب مؤقتًا',
+                              ),
+                            ),
                           ),
                         ),
                       ),
@@ -889,10 +917,7 @@ class _ActionButton extends StatelessWidget {
               SizedBox(
                 width: 14,
                 height: 14,
-                child: CircularProgressIndicator(
-                  color: color,
-                  strokeWidth: 2,
-                ),
+                child: CircularProgressIndicator(color: color, strokeWidth: 2),
               )
             else
               Icon(icon, size: 16, color: color),

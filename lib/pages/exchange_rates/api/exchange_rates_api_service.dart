@@ -13,14 +13,15 @@ class ExchangeRatesApiService {
     return _parseList(response.data, ExchangeRateModel.fromJson);
   }
 
-  Future<void> updateExchangeRate(
+  Future<ExchangeRateModel> updateExchangeRate(
     String id,
     ExchangeRateRequestModel request,
   ) async {
-    await _dio.put(
+    final response = await _dio.put(
       '${ApiConstants.exchangeRateUpdate}/$id',
       data: request.toJson(),
     );
+    return ExchangeRateModel.fromJson(response.data);
   }
 
   static List<T> _parseList<T>(

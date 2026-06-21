@@ -7,7 +7,7 @@ class ApiConstants {
 
   // Exchange Rates
   static const String exchangeRates = "v1/ExchangeRate";
-  static const String exchangeRateUpdate = "v1/ExchangeRate/Update";
+  static const String exchangeRateUpdate = "v1/ExchangeRate";
 
   // Currencies
   static const String currencies = "v1/Currency";
@@ -19,9 +19,8 @@ class ApiConstants {
 
   // Exchange Requests
   static const String exchangeRequests = "v1/ExchangeRequest";
-  static const String exchangeRequestAccept = "v1/ExchangeRequest/Accept";
-  static const String exchangeRequestReject = "v1/ExchangeRequest/Reject";
-  static const String exchangeRequestSuspend = "v1/ExchangeRequest/Suspend";
+
+
 }
 
 class ApiErrors {

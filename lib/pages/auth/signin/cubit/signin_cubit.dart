@@ -3,6 +3,7 @@ import 'package:exchange_admin/core/constants/cached/cached_helper.dart';
 import 'package:exchange_admin/core/constants/functions.dart';
 import 'package:exchange_admin/core/networking/dio_factory.dart';
 import 'package:exchange_admin/pages/auth/signin/cubit/signin_state.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 
 import '../api/signin_api.dart';
@@ -19,6 +20,8 @@ class SigninCubit extends BaseCubit<SigninState> {
   Future<void> signin() async {
     if (!validateForm()) return;
 
+    final tokenFcm = await CacheHelper.getString('tokenFCM');
+
     await executeApi(
       onLoading: () => emit(const SigninState.loading()),
 
@@ -26,6 +29,7 @@ class SigninCubit extends BaseCubit<SigninState> {
         SigninRequestModel(
           email: emailController.text.trim(),
           password: passwordController.text.trim(),
+          tokenFcm: tokenFcm,
         ),
       ),
 

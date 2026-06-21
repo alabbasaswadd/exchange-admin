@@ -2,6 +2,7 @@ import 'package:exchange_admin/core/constants/base_cubit.dart';
 import 'package:exchange_admin/pages/auth/signin/cubit/signin_state.dart';
 import 'package:exchange_admin/pages/exchange_requests/api/exchange_requests_api.dart';
 import 'package:exchange_admin/pages/exchange_requests/model/exchange_request_model.dart';
+import 'package:exchange_admin/pages/exchange_requests/model/exchange_request_request_model.dart';
 
 class ExchangeRequestsCubit
     extends BaseCubit<SigninState<List<ExchangeRequestModel>>> {
@@ -36,30 +37,30 @@ class ExchangeRequestsCubit
     emit(SigninState.success(filtered));
   }
 
-  Future<void> acceptRequest(String id) async {
+  Future<void> updateRequest(String id, ExchangeRequestRequestModel data) async {
     await executeApi(
       onLoading: () => emit(const SigninState.loading()),
-      request: () => api.acceptRequest(id),
+      request: () => api.updateRequest(id, data),
       onSuccess: (_) async => fetchRequests(),
       onError: (message) => emit(SigninState.error(message)),
     );
   }
 
-  Future<void> rejectRequest(String id) async {
-    await executeApi(
-      onLoading: () => emit(const SigninState.loading()),
-      request: () => api.rejectRequest(id),
-      onSuccess: (_) async => fetchRequests(),
-      onError: (message) => emit(SigninState.error(message)),
-    );
-  }
+  // Future<void> rejectRequest(String id) async {
+  //   await executeApi(
+  //     onLoading: () => emit(const SigninState.loading()),
+  //     request: () => api.rejectRequest(id),
+  //     onSuccess: (_) async => fetchRequests(),
+  //     onError: (message) => emit(SigninState.error(message)),
+  //   );
+  // }
 
-  Future<void> suspendRequest(String id) async {
-    await executeApi(
-      onLoading: () => emit(const SigninState.loading()),
-      request: () => api.suspendRequest(id),
-      onSuccess: (_) async => fetchRequests(),
-      onError: (message) => emit(SigninState.error(message)),
-    );
-  }
+  // Future<void> suspendRequest(String id) async {
+  //   await executeApi(
+  //     onLoading: () => emit(const SigninState.loading()),
+  //     request: () => api.suspendRequest(id),
+  //     onSuccess: (_) async => fetchRequests(),
+  //     onError: (message) => emit(SigninState.error(message)),
+  //   );
+  // }
 }

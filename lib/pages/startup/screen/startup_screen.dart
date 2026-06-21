@@ -158,14 +158,14 @@ class _StartupScreenState extends State<StartupScreen>
           end: Alignment.bottomRight,
           colors: isDark
               ? [
-                  const Color(0xFF0A0E1A),
-                  const Color(0xFF0D1B2A),
-                  const Color(0xFF0A2744),
+                  const Color(0xFF022C22),
+                  const Color(0xFF064E3B),
+                  const Color(0xFF065F46),
                 ]
               : [
-                  const Color(0xFF0D47A1),
-                  const Color(0xFF1565C0),
-                  const Color(0xFF1976D2),
+                  const Color(0xFF047857),
+                  const Color(0xFF059669),
+                  const Color(0xFF10B981),
                 ],
           stops: const [0.0, 0.5, 1.0],
         ),
@@ -259,7 +259,7 @@ class _StartupScreenState extends State<StartupScreen>
                 AppImages.klogo,
                 fit: BoxFit.contain,
                 errorBuilder: (_, __, ___) => const Icon(
-                  Icons.wifi_tethering_rounded,
+                  Icons.currency_exchange_rounded,
                   size: 48,
                   color: AppColors.kPrimaryColor,
                 ),
@@ -296,12 +296,12 @@ class _StartupScreenState extends State<StartupScreen>
           children: [
             ShaderMask(
               shaderCallback: (bounds) => const LinearGradient(
-                colors: [Colors.white, Color(0xFFBBDEFB)],
+                colors: [Colors.white, Color(0xFFA7F3D0)],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ).createShader(bounds),
               child: const Text(
-                'MikroNet',
+                'ExChange',
                 style: TextStyle(
                   fontFamily: 'Cairo-Bold',
                   fontSize: 38,
@@ -324,7 +324,7 @@ class _StartupScreenState extends State<StartupScreen>
                 ),
               ),
               child: const Text(
-                'بوابتك إلى الإنترنت السريع',
+                'نظام إدارة الصرافة والعملات',
                 style: TextStyle(
                   fontFamily: 'Cairo-Bold',
                   fontSize: 14,
@@ -388,7 +388,7 @@ class _StartupScreenState extends State<StartupScreen>
                 Container(width: 30, height: 1, color: Colors.white24),
                 const SizedBox(width: 10),
                 const Text(
-                  'مدعوم بتقنية MikroTik',
+                  'خدمات الصرف المالي الآمنة',
                   style: TextStyle(
                     fontFamily: 'Cairo-Bold',
                     fontSize: 12,

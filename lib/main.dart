@@ -2,19 +2,32 @@ import 'package:exchange_admin/core/constants/cached/cached_helper.dart';
 import 'package:exchange_admin/core/constants/functions.dart';
 import 'package:exchange_admin/core/networking/dio_factory.dart';
 import 'package:exchange_admin/core/di/dependency_injection.dart';
+import 'package:exchange_admin/core/signalr/signalr_service.dart';
+import 'package:exchange_admin/firebase_options.dart';
 import 'package:exchange_admin/l10n/app_localizations.dart';
 import 'package:exchange_admin/routes.dart';
 import 'package:exchange_admin/theme.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
+SignalRService? signalRService;
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  initFCM();
   await initDI();
   await UserSession.init();
   final token = await CacheHelper.getString('token');
   if (token.isNotEmpty) {
     DioFactory.setTokenIntoHeaderAfterLogin(token);
+  }
+  if (UserSession.token != null &&
+      UserSession.token!.isNotEmpty &&
+      UserSession.role != null) {
+    signalRService = SignalRService();
+    await signalRService!.connect(UserSession.token!, UserSession.role!.toString());
   }
   runApp(const MyApp());
 }

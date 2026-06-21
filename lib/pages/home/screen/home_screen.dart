@@ -5,6 +5,7 @@ import 'package:exchange_admin/core/components/app_button.dart';
 import 'package:exchange_admin/core/components/app_snackbar.dart';
 import 'package:exchange_admin/core/components/app_text.dart';
 import 'package:exchange_admin/core/components/app_text_form_field.dart';
+import 'package:exchange_admin/core/components/custom_appbar.dart';
 import 'package:exchange_admin/core/constants/colors.dart';
 import 'package:exchange_admin/core/constants/functions.dart';
 import 'package:exchange_admin/pages/auth/signin/cubit/signin_cubit.dart';
@@ -32,12 +33,77 @@ class HomeScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
+      appBar: CustomAppBar(
+        title: 'مرحبا ${UserSession.fullName}',
+        centerTitle: false,
+        fontColor: Colors.white,
+        backgroundColor: isDark
+            ? AppColors.kPrimaryColorDarkMode
+            : AppColors.kPrimaryColor,
+        actions: [
+          BlocBuilder<NotificationsCubit, List<NotificationModel>>(
+            builder: (context, _) {
+              final unread = context.read<NotificationsCubit>().unreadCount;
+              return Stack(
+                alignment: Alignment.center,
+                children: [
+                  IconButton(
+                    icon: const Icon(
+                      Icons.notifications_outlined,
+                      color: Colors.white,
+                      size: 24,
+                    ),
+                    onPressed: () => context.push('/notifications'),
+                  ),
+                  if (unread > 0)
+                    Positioned(
+                      top: 8,
+                      right: 6,
+                      child: Container(
+                        width: 18,
+                        height: 18,
+                        decoration: BoxDecoration(
+                          color: AppColors.kRedColor,
+                          shape: BoxShape.circle,
+                          border: Border.all(color: Colors.white, width: 1.5),
+                        ),
+                        alignment: Alignment.center,
+                        child: AppText(
+                          unread > 9 ? '9+' : '$unread',
+                          fontSize: 9,
+                          color: Colors.white,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                ],
+              );
+            },
+          ),
+          IconButton(
+            onPressed: () {
+              showDialog(
+                context: context,
+                builder: (contextt) => AppAlertDialog(
+                  onOk: () {
+                    context.read<SigninCubit>().logout();
+                    contextt.go('/signin');
+                  },
+                  onNo: contextt.pop,
+                  title: "تسجيل الخروج",
+                  content: "هل تريد تسجبل الخروج ؟",
+                ),
+              );
+            },
+            icon: const Icon(Icons.logout_rounded),
+          ),
+        ],
+      ),
       backgroundColor: isDark
           ? AppColors.kBackgroundDark
           : const Color(0xFFF0F4F8),
       body: CustomScrollView(
         slivers: [
-          _buildAppBar(context, isDark),
           SliverPadding(
             padding: const EdgeInsets.only(bottom: 48),
             sliver: SliverList(
@@ -48,124 +114,7 @@ class HomeScreen extends StatelessWidget {
       ),
     );
   }
-
-  SliverAppBar _buildAppBar(BuildContext context, bool isDark) {
-    return SliverAppBar(
-      expandedHeight: 96,
-      pinned: true,
-      stretch: true,
-      backgroundColor: isDark
-          ? AppColors.kPrimaryColorDarkMode
-          : AppColors.kPrimaryColor,
-      flexibleSpace: FlexibleSpaceBar(
-        stretchModes: const [StretchMode.zoomBackground],
-        background: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: isDark
-                  ? [
-                      AppColors.kPrimaryColorDarkMode,
-                      AppColors.kSecondColorDarkMode,
-                    ]
-                  : [AppColors.kPrimaryColor, const Color(0xFF047857)],
-              begin: Alignment.topRight,
-              end: Alignment.bottomLeft,
-            ),
-          ),
-        ),
-        title: Row(
-          children: [
-            const SizedBox(width: 4),
-            Container(
-              width: 30,
-              height: 30,
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.2),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.admin_panel_settings_rounded,
-                color: Colors.white,
-                size: 16,
-              ),
-            ),
-            const SizedBox(width: 8),
-            const Expanded(
-              child: AppText(
-                'لوحة الإدارة',
-                color: Colors.white,
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ],
-        ),
-        titlePadding: const EdgeInsets.only(bottom: 12, left: 16, right: 100),
-        centerTitle: false,
-      ),
-      actions: [
-        BlocBuilder<NotificationsCubit, List<NotificationModel>>(
-          builder: (context, _) {
-            final unread = context.read<NotificationsCubit>().unreadCount;
-            return Stack(
-              alignment: Alignment.center,
-              children: [
-                IconButton(
-                  icon: const Icon(
-                    Icons.notifications_outlined,
-                    color: Colors.white,
-                    size: 24,
-                  ),
-                  onPressed: () => context.push('/notifications'),
-                ),
-                if (unread > 0)
-                  Positioned(
-                    top: 8,
-                    right: 6,
-                    child: Container(
-                      width: 18,
-                      height: 18,
-                      decoration: BoxDecoration(
-                        color: AppColors.kRedColor,
-                        shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white, width: 1.5),
-                      ),
-                      alignment: Alignment.center,
-                      child: AppText(
-                        unread > 9 ? '9+' : '$unread',
-                        fontSize: 9,
-                        color: Colors.white,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ),
-              ],
-            );
-          },
-        ),
-        IconButton(
-          onPressed: () {
-            showDialog(
-              context: context,
-              builder: (contextt) => AppAlertDialog(
-                onOk: () {
-                  context.read<SigninCubit>().logout();
-                  contextt.go('/signin');
-                },
-                onNo: contextt.pop,
-                title: "تسجيل الخروج",
-                content: "هل تريد تسجبل الخروج ؟",
-              ),
-            );
-          },
-          icon: const Icon(Icons.logout_rounded),
-        ),
-      ],
-    );
-  }
-
 }
-
 // ─────────────────────────────────────────────────────────────────────────────
 // MAIN CARD  (stateful — owns fromCode / toCode)
 // ─────────────────────────────────────────────────────────────────────────────
@@ -218,11 +167,7 @@ class _MainCardState extends State<_MainCard> {
               padding: const EdgeInsets.fromLTRB(20, 22, 20, 20),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildGreeting(),
-                  const SizedBox(height: 20),
-                  _buildRateSection(context),
-                ],
+                children: [_buildRateSection(context)],
               ),
             ),
             // ── white bottom section — recent requests ──────────────────
@@ -234,74 +179,6 @@ class _MainCardState extends State<_MainCard> {
   }
 
   // ── Greeting ──────────────────────────────────────────────────────────────
-
-  Widget _buildGreeting() {
-    final now = DateTime.now();
-    const months = [
-      '',
-      'يناير',
-      'فبراير',
-      'مارس',
-      'أبريل',
-      'مايو',
-      'يونيو',
-      'يوليو',
-      'أغسطس',
-      'سبتمبر',
-      'أكتوبر',
-      'نوفمبر',
-      'ديسمبر',
-    ];
-    final dateStr = '${now.day} ${months[now.month]} ${now.year}';
-
-    return Row(
-      children: [
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              AppText(
-                'مرحباً ${UserSession.fullName}',
-                fontSize: 22,
-                color: Colors.white,
-                fontWeight: FontWeight.w700,
-              ),
-              const SizedBox(height: 4),
-              Row(
-                children: [
-                  Icon(
-                    Icons.calendar_today_rounded,
-                    size: 11,
-                    color: Colors.white.withValues(alpha: 0.75),
-                  ),
-                  const SizedBox(width: 5),
-                  AppText(
-                    dateStr,
-                    fontSize: 11,
-                    color: Colors.white.withValues(alpha: 0.75),
-                    fontWeight: FontWeight.w400,
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-        Container(
-          width: 52,
-          height: 52,
-          decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.14),
-            shape: BoxShape.circle,
-          ),
-          child: const Icon(
-            Icons.account_balance_rounded,
-            color: Colors.white,
-            size: 26,
-          ),
-        ),
-      ],
-    );
-  }
 
   // ── Rate section (header + dropdowns + rate display in one block) ─────────
 
@@ -512,76 +389,14 @@ class _MainCardState extends State<_MainCard> {
                   );
                 },
               ),
-              // spread row
-              if (rate != null) ...[
-                const SizedBox(height: 10),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.compare_arrows_rounded,
-                      size: 12,
-                      color: Colors.white.withValues(alpha: 0.5),
-                    ),
-                    const SizedBox(width: 4),
-                    AppText(
-                      'الهامش: ${_fmtRate(spread)}  (${spreadPct.toStringAsFixed(1)}%)',
-                      fontSize: 11,
-                      color: Colors.white.withValues(alpha: 0.55),
-                      fontWeight: FontWeight.w400,
-                    ),
-                  ],
-                ),
-              ],
+
               // not found
-              if (rate == null && !isLoading) ...[
-                const SizedBox(height: 10),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 14,
-                    vertical: 10,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.08),
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.14),
-                    ),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(
-                        Icons.info_outline_rounded,
-                        color: Colors.white70,
-                        size: 16,
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: AppText(
-                          'لا يوجد سعر صرف لزوج $_fromCode / $_toCode',
-                          fontSize: 11,
-                          color: Colors.white.withValues(alpha: 0.7),
-                          fontWeight: FontWeight.w400,
-                          maxLines: 2,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
             ],
           ),
         );
       },
     );
   }
-
-  String _fmtRate(double? v) {
-    if (v == null) return '—';
-    return v >= 100 ? v.toStringAsFixed(0) : v.toStringAsFixed(2);
-  }
-
-  // ── Recent requests (bottom section of the card) ──────────────────────────
 
   Widget _buildRecentRequests(BuildContext context, bool isDark) {
     return Container(
@@ -760,7 +575,7 @@ class _CurrencyDropdownButton extends StatelessWidget {
   });
 
   String _fmt(double v) =>
-      v >= 1000 ? v.toStringAsFixed(0) : v.toStringAsFixed(2);
+      v < 100 ? v.toStringAsFixed(3) : v.toStringAsFixed(2);
 
   @override
   Widget build(BuildContext context) {
@@ -1411,8 +1226,16 @@ class _RequestRow extends StatelessWidget {
   const _RequestRow({required this.request, required this.isLast});
 
   static const _statusConfig = {
-    0: (icon: Icons.hourglass_empty_rounded, color: Color(0xFFF59E0B), label: 'معلّق'),
-    1: (icon: Icons.check_rounded, color: AppColors.kSuccessColor, label: 'مقبول'),
+    0: (
+      icon: Icons.hourglass_empty_rounded,
+      color: Color(0xFFF59E0B),
+      label: 'معلّق',
+    ),
+    1: (
+      icon: Icons.check_rounded,
+      color: AppColors.kSuccessColor,
+      label: 'مقبول',
+    ),
     2: (icon: Icons.close_rounded, color: AppColors.kRedColor, label: 'مرفوض'),
     3: (icon: Icons.pause_rounded, color: AppColors.kGreyColor, label: 'موقوف'),
   };
@@ -1420,8 +1243,13 @@ class _RequestRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final cfg = _statusConfig[request.status] ??
-        (icon: Icons.help_outline_rounded, color: AppColors.kGreyColor, label: '—');
+    final cfg =
+        _statusConfig[request.status] ??
+        (
+          icon: Icons.help_outline_rounded,
+          color: AppColors.kGreyColor,
+          label: '—',
+        );
 
     return Column(
       children: [

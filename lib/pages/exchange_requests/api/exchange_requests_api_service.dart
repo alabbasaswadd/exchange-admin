@@ -1,6 +1,8 @@
 import 'package:dio/dio.dart';
 import 'package:exchange_admin/core/networking/api_constans.dart';
 import 'package:exchange_admin/pages/exchange_requests/model/exchange_request_model.dart';
+import 'package:exchange_admin/pages/exchange_requests/model/exchange_request_request_model.dart';
+import 'package:exchange_admin/pages/exchange_requests/model/exchange_request_response_model.dart';
 
 class ExchangeRequestsApiService {
   final Dio _dio;
@@ -12,17 +14,24 @@ class ExchangeRequestsApiService {
     return _parseList(response.data, ExchangeRequestModel.fromJson);
   }
 
-  Future<void> acceptRequest(String id) async {
-    await _dio.put('${ApiConstants.exchangeRequestAccept}/$id');
+  Future<ExchangeRequestResponseModel> updateRequest(
+    String id,
+    ExchangeRequestRequestModel data,
+  ) async {
+    final response = await _dio.put(
+      '${ApiConstants.exchangeRequests}/$id/status',
+      data: data.toJson(),
+    );
+    return ExchangeRequestResponseModel.fromJson(response.data);
   }
 
-  Future<void> rejectRequest(String id) async {
-    await _dio.put('${ApiConstants.exchangeRequestReject}/$id');
-  }
+  // Future<void> rejectRequest(String id) async {
+  //   await _dio.put('${ApiConstants.exchangeRateUpdate}/$id');
+  // }
 
-  Future<void> suspendRequest(String id) async {
-    await _dio.put('${ApiConstants.exchangeRequestSuspend}/$id');
-  }
+  // Future<void> suspendRequest(String id) async {
+  //   await _dio.put('${ApiConstants.exchangeRequestSuspend}/$id');
+  // }
 
   static List<T> _parseList<T>(
     dynamic data,

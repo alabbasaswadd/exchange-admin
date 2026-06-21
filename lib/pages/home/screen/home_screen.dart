@@ -1,5 +1,6 @@
 ﻿import 'dart:math' show min;
-
+import 'package:android_intent_plus/android_intent.dart';
+import 'package:android_intent_plus/flag.dart';
 import 'package:exchange_admin/core/components/app_alert_dialog.dart';
 import 'package:exchange_admin/core/components/app_button.dart';
 import 'package:exchange_admin/core/components/app_snackbar.dart';
@@ -16,8 +17,10 @@ import 'package:exchange_admin/pages/exchange_rates/cubit/exchange_rates_cubit.d
 import 'package:exchange_admin/pages/exchange_rates/model/exchange_rate_model.dart';
 import 'package:exchange_admin/pages/exchange_requests/cubit/exchange_requests_cubit.dart';
 import 'package:exchange_admin/pages/exchange_requests/model/exchange_request_model.dart';
+import 'package:exchange_admin/pages/exchange_requests/widgets/request_detail_sheet.dart';
 import 'package:exchange_admin/pages/notifications/cubit/notifications_cubit.dart';
 import 'package:exchange_admin/pages/notifications/model/notification_model.dart';
+import 'package:external_app_launcher/external_app_launcher.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -28,6 +31,50 @@ import 'package:go_router/go_router.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
+
+  static const _pkg = 'com.shmacash.shamcash';
+
+  // Tries Flutter route extras with CLEAR_TASK (forces cold-start so the route
+  // extra is actually processed), then falls back to opening the app home.
+  Future<void> _openShamCashSend(BuildContext context) async {
+    // Common send/transfer route guesses for a Flutter exchange app.
+    const routes = [
+      '/send',
+      '/transfer',
+      '/new-order',
+      '/create-order',
+      '/exchange',
+    ];
+
+    for (final route in routes) {
+      try {
+        await AndroidIntent(
+          action: 'android.intent.action.MAIN',
+          package: _pkg,
+          componentName: '$_pkg.MainActivity',
+          arguments: <String, dynamic>{'route': route},
+          // CLEAR_TASK + NEW_TASK forces the app to restart so Flutter
+          // actually reads the route extra instead of resuming the old state.
+          flags: <int>[
+            Flag.FLAG_ACTIVITY_NEW_TASK,
+            Flag.FLAG_ACTIVITY_CLEAR_TASK,
+          ],
+        ).launch();
+        return;
+      } catch (_) {
+        continue;
+      }
+    }
+
+    // Nothing worked — open the app home.
+    try {
+      await LaunchApp.openApp(androidPackageName: _pkg, openStore: false);
+    } catch (_) {
+      if (context.mounted) {
+        AppSnackbar.showError(context, 'تطبيق شام كاش غير مثبت');
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -53,7 +100,8 @@ class HomeScreen extends StatelessWidget {
                       color: Colors.white,
                       size: 24,
                     ),
-                    onPressed: () => context.push('/notifications'),
+
+                    onPressed: () => _openShamCashSend(context),
                   ),
                   if (unread > 0)
                     Positioned(
@@ -485,6 +533,7 @@ class _MainCardState extends State<_MainCard> {
                           (e) => _RequestRow(
                             request: e.value,
                             isLast: e.key == recent.length - 1,
+                            onTap: () => _openRequestDetail(context, e.value),
                           ),
                         )
                         .toList(),
@@ -514,6 +563,21 @@ class _MainCardState extends State<_MainCard> {
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  // ── Detail opener ─────────────────────────────────────────────────────────
+
+  void _openRequestDetail(BuildContext context, ExchangeRequestModel request) {
+    final cubit = context.read<ExchangeRequestsCubit>();
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => BlocProvider.value(
+        value: cubit,
+        child: RequestDetailSheet(request: request),
       ),
     );
   }
@@ -1222,8 +1286,9 @@ class _CurrencyFormSheetState extends State<_CurrencyFormSheet> {
 class _RequestRow extends StatelessWidget {
   final ExchangeRequestModel request;
   final bool isLast;
+  final VoidCallback? onTap;
 
-  const _RequestRow({required this.request, required this.isLast});
+  const _RequestRow({required this.request, required this.isLast, this.onTap});
 
   static const _statusConfig = {
     0: (
@@ -1253,92 +1318,112 @@ class _RequestRow extends StatelessWidget {
 
     return Column(
       children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          child: Row(
-            children: [
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: cfg.color.withValues(alpha: 0.1),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(cfg.icon, color: cfg.color, size: 20),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    AppText(
-                      request.user?.fullName ?? '—',
-                      fontSize: 13,
-                      fontWeight: FontWeight.w700,
+        Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: onTap,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
+              child: Row(
+                children: [
+                  // ── status icon ───────────────────────────────────────
+                  Container(
+                    width: 42,
+                    height: 42,
+                    decoration: BoxDecoration(
+                      color: cfg.color.withValues(alpha: 0.12),
+                      shape: BoxShape.circle,
                     ),
-                    const SizedBox(height: 3),
-                    Row(
+                    child: Icon(cfg.icon, color: cfg.color, size: 20),
+                  ),
+                  const SizedBox(width: 12),
+                  // ── text content ──────────────────────────────────────
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        _CodeChip(
-                          code: request.fromCurrency?.code ?? '—',
-                          color: AppColors.kRedColor,
+                        Row(
+                          children: [
+                            Expanded(
+                              child: AppText(
+                                request.user?.fullName ?? '—',
+                                fontSize: 13,
+                                fontWeight: FontWeight.w700,
+                                maxLines: 1,
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 7,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: cfg.color.withValues(alpha: 0.12),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: AppText(
+                                cfg.label,
+                                fontSize: 10,
+                                color: cfg.color,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
                         ),
-                        const Padding(
-                          padding: EdgeInsets.symmetric(horizontal: 4),
-                          child: Icon(
-                            Icons.arrow_back_rounded,
-                            size: 11,
-                            color: AppColors.kGreyColor,
-                          ),
-                        ),
-                        _CodeChip(
-                          code: request.toCurrency?.code ?? '—',
-                          color: AppColors.kSuccessColor,
-                        ),
-                        const SizedBox(width: 8),
-                        AppText(
-                          '${_fmt(request.amount)} ${request.fromCurrency?.code ?? ''}',
-                          fontSize: 11,
-                          color: AppColors.kGreyColor,
-                          fontWeight: FontWeight.w400,
+                        const SizedBox(height: 5),
+                        Row(
+                          children: [
+                            AppText(
+                              '${_fmt(request.amount)} ${request.fromCurrency?.code ?? ''}',
+                              fontSize: 11,
+                              color: AppColors.kRedColor,
+                              fontWeight: FontWeight.w600,
+                            ),
+                            const Padding(
+                              padding: EdgeInsets.symmetric(horizontal: 5),
+                              child: Icon(
+                                Icons.arrow_forward_rounded,
+                                size: 10,
+                                color: AppColors.kGreyColor,
+                              ),
+                            ),
+                            AppText(
+                              '${_fmt(request.finalAmount)} ${request.toCurrency?.code ?? ''}',
+                              fontSize: 11,
+                              color: AppColors.kSuccessColor,
+                              fontWeight: FontWeight.w600,
+                            ),
+                            const Spacer(),
+                            AppText(
+                              _fmtDate(request.createdAt ?? request.createdOn),
+                              fontSize: 10,
+                              color: AppColors.kGreyColor.withValues(
+                                alpha: 0.6,
+                              ),
+                              fontWeight: FontWeight.w400,
+                            ),
+                          ],
                         ),
                       ],
                     ),
-                  ],
-                ),
-              ),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  AppText(
-                    '${_fmt(request.finalAmount)} ${request.toCurrency?.code ?? ''}',
-                    fontSize: 13,
-                    color: cfg.color,
-                    fontWeight: FontWeight.w700,
                   ),
-                  const SizedBox(height: 2),
-                  AppText(
-                    cfg.label,
-                    fontSize: 10,
-                    color: cfg.color,
-                    fontWeight: FontWeight.w600,
-                  ),
-                  const SizedBox(height: 1),
-                  AppText(
-                    _fmtDate(request.createdAt ?? request.createdOn),
-                    fontSize: 10,
-                    color: AppColors.kGreyColor.withValues(alpha: 0.65),
-                    fontWeight: FontWeight.w400,
+                  const SizedBox(width: 6),
+                  // ── chevron ───────────────────────────────────────────
+                  Icon(
+                    Icons.chevron_left_rounded,
+                    size: 18,
+                    color: AppColors.kGreyColor.withValues(alpha: 0.4),
                   ),
                 ],
               ),
-            ],
+            ),
           ),
         ),
         if (!isLast)
           Divider(
             height: 1,
-            indent: 68,
+            indent: 70,
             endIndent: 16,
             color: isDark
                 ? Colors.white.withValues(alpha: 0.05)
@@ -1363,30 +1448,6 @@ class _RequestRow extends StatelessWidget {
     } catch (_) {
       return d;
     }
-  }
-}
-
-class _CodeChip extends StatelessWidget {
-  final String code;
-  final Color color;
-
-  const _CodeChip({required this.code, required this.color});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(5),
-      ),
-      child: AppText(
-        code,
-        fontSize: 10,
-        color: color,
-        fontWeight: FontWeight.w700,
-      ),
-    );
   }
 }
 
